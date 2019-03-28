@@ -7,7 +7,7 @@ prown - Change project owner
 
 ## SYNOPSIS
 
-    chown DIRECTORY(s)
+    prown DIRECTORY(s)
 
 ## DESCRIPTION
 
