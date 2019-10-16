@@ -1,4 +1,3 @@
-#define _POSIX_SOURCE
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdio.h>
@@ -73,7 +72,7 @@ void read_config_file(char* config_filename, char* projectsdir) {
 	FILE *fp;
     	char buf[50];
 	if ((fp=fopen(config_filename, "r")) == NULL) {
-        	fprintf(stderr, "Failed to open config file %s", config_filename);
+        	fprintf(stderr, "Failed to open config file %s \n", config_filename);
         	exit(EXIT_FAILURE);
     	}
     	while(! feof(fp)) {
