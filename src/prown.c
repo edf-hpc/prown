@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <pwd.h>
 
 /*
  * Check if user has access to project 'path' .
@@ -20,6 +21,28 @@ int projectAccess(const char *path)
 	return result;
 }
 
+/*set user as the owner of the current file or directory*/
+void setOwner(const char *path)
+{	
+	//use lchown to change owner for symlinks 
+        if (lchown(path,getuid(),(gid_t)-1) != 0)
+        {
+		perror("chown");
+                exit(EXIT_FAILURE);
+        }
+        //set rwx to user and rw to group if its not a symlink
+	struct stat buf;
+	int x = lstat (path, &buf);
+	if (!S_ISLNK(buf.st_mode))
+	{ 
+        	if (chmod(path,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP) != 0)
+        	{
+                	perror("chmod");
+                	exit(EXIT_FAILURE);
+        	}
+	}
+}
+
 /*
  * set recursively the user as the owner of the project.
  *
@@ -28,12 +51,11 @@ int projectAccess(const char *path)
 int projectOwner(char *basepath){
     	char path[1000];
     	struct dirent *dp;
-    	DIR *dir = opendir(basepath);
+	DIR *dir = opendir(basepath);
         int status = 0;
     	// Unable to open directory stream
     	if (!dir)
         	return 1;
-
     	while ((dp = readdir(dir)) != NULL)
     	{
     		if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0 && strcmp(dp->d_name, basepath) != 0)
@@ -42,19 +64,8 @@ int projectOwner(char *basepath){
         		strcpy(path, basepath);
         		strcat(path, "/");
         		strcat(path, dp->d_name);
-        		projectOwner(path);	
-			//set user as the owner of the current file or directory
-                        if (chown(path,getuid(),(gid_t)-1) != 0)
-	                {
-        	                perror("chown");
-                	        exit(EXIT_FAILURE);
-                	}
-			//set rwx to user and rw to group 
-                        if (chmod(path,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP) != 0)
-			{
-				perror("chmod");
-				exit(EXIT_FAILURE);
-			}
+			projectOwner(path);
+			setOwner(path);	
 		}
 	}
         closedir(dir);
@@ -94,10 +105,8 @@ int main(int argc, char **argv) {
         int validargs=0,i,j,nbarg,status;
         char projectroot[PATH_MAX], real_dir[argc][PATH_MAX];
         size_t lenprojectroot;
-        char command[1000]="";
         
 	read_config_file("/etc/prown.conf", projectroot); 
-	sprintf(uid_str, "%d", uid);
         lenprojectroot=strlen(projectroot);
         if (argc == 1)
         {
@@ -144,6 +153,17 @@ int main(int argc, char **argv) {
         {
                 for (i = 0; i < argc-1; i++)
                 {
+			struct stat path_stat;
+        		stat(projectPath[i], &path_stat);
+        		if (path_stat.st_mode & S_IFREG)
+        		{
+                		printf("owning file %s", projectPath[i]);
+                		setOwner(projectPath[i]);
+        		}
+			if ((long)path_stat.st_uid != 0)
+		        {
+                		setOwner(projectPath[i]);
+        		}
 			status=projectOwner(projectPath[i]);
                 }
         }
