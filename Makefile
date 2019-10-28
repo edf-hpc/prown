@@ -2,7 +2,7 @@ prefix = /usr/local
 all:src/prown
 
 src/prown:src/prown.c
-	$(CC)  -o $@ $^
+	$(CC)  -o $@ $^ -lbsd
 
 install: src/prown
 	install -D src/prown \
