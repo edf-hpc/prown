@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
+#include <bsd/string.h>
 #include <limits.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -88,7 +89,8 @@ int projectOwner(char *basepath){
 		if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0 && strcmp(dp->d_name, basepath) != 0)
 		{
 			// Construct new path from our base path
-			strcpy(path, basepath);
+			if (strlcpy(path, basepath,sizeof(path)) >= sizeof(path))
+				exit(1);
 			strcat(path, "/");
 			strcat(path, dp->d_name);
 			projectOwner(path);
@@ -170,7 +172,8 @@ int prownProject(char* path){
 		else if ((strstr(real_dir, projectroot) != NULL) && (strcmp(real_dir,projectroot)))
 		{
 			printf("Setting owner of %s  directory %s to %d\n", path, real_dir, uid,lenprojectroot);
-			strcpy(projectPath,real_dir);
+			if (strlcpy(projectPath,real_dir,sizeof(projectPath)) >= sizeof(projectPath))
+				exit(1);
 			struct stat path_stat;
 			stat(projectPath, &path_stat);
 			if (path_stat.st_mode & S_IFREG)
