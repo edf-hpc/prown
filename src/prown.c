@@ -34,6 +34,8 @@
 
 /* static variable for verbose mode */ 
 static int verbose;
+/* number of project paths in config file */ 
+static int nop=0;
 
 /*
  * Check if user has access to project 'path' .
@@ -110,9 +112,9 @@ void read_str_from_config_line(char* config_line, char* val) {
 }
 
 /*
- * Read config file.
+ * Read config file. projectsdir is the lis of projects
  * */
-void read_config_file(char config_filename[], char projectsdir[]) {
+void read_config_file(char config_filename[], char* projectsdir[]) {
 	FILE *fp;
     	char buf[50];
 	if ((fp=fopen(config_filename, "r")) == NULL) {
@@ -122,13 +124,18 @@ void read_config_file(char config_filename[], char projectsdir[]) {
     	while(! feof(fp)) {
         	fgets(buf, 100, fp);
         	if (buf[0] == '#' || strlen(buf) < 4) {
-            		continue;
+            	continue;
         	}	
         	if (strstr(buf, "PROJECTS_DIR ")) {
-            		read_str_from_config_line(buf, projectsdir);
+				if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
+					printf("Unable to allocate memory \n");
+					exit(1);
+				}	
+            	read_str_from_config_line(buf, projectsdir[nop]);
+            	nop++;
         	}
     	}
-    	fclose(fp);
+		fclose(fp);
 }
 
 void usage(int status) {
@@ -154,14 +161,24 @@ int prownProject(char* path){
 	uid_t uid=getuid();
 	char projectPath[PATH_MAX]; /* List of project paths*/
 	int validargs=0,i,j,nbarg,status;
-	char projectroot[PATH_MAX], real_dir[PATH_MAX];
+	char* projectsroot[PATH_MAX];
+	char real_dir[PATH_MAX], projectroot[PATH_MAX];
 	size_t lenprojectroot;
 
-	read_config_file("/etc/prown.conf", projectroot); 
-	lenprojectroot=strlen(projectroot);
+	read_config_file("/etc/prown.conf", projectsroot);
 	// if the real path is correct
 	if (realpath(path, real_dir) != '\0')
 	{
+		int isInProjectPath = 0;
+		for (i=0; i<nop ; i++)
+		{
+			if ((strstr(real_dir, projectsroot[i]) != NULL) && (strcmp(real_dir,projectsroot[i])))
+			{
+				strlcpy(projectroot,projectsroot[i],sizeof(projectroot));
+				isInProjectPath = 1;
+			}	
+		} 
+		lenprojectroot=strlen(projectroot);
 		//calculate the real path lengh of the project
 		lenprojectroot=strlen(projectroot);
 		// if the user hasn't access to the project 
@@ -169,7 +186,7 @@ int prownProject(char* path){
 			printf("Error: permission denied for project '%s' \n", real_dir);
 		}
 		// if the user passed path is in the ptoject path 
-		else if ((strstr(real_dir, projectroot) != NULL) && (strcmp(real_dir,projectroot)))
+		else if (isInProjectPath == 1)
 		{
 			printf("Setting owner of %s  directory %s to %d\n", path, real_dir, uid,lenprojectroot);
 			if (strlcpy(projectPath,real_dir,sizeof(projectPath)) >= sizeof(projectPath))
