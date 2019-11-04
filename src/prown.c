@@ -30,23 +30,13 @@
 #include <pwd.h>
 #include "error.h"
 #include <getopt.h>
+#include <grp.h>
 
 
 /* static variable for verbose mode */ 
 static int verbose;
 /* number of project paths in config file */ 
 static int nop=0;
-
-/*
- * Check if user has access to project 'path' .
- *
- * Returns 0 if valid, 1 otherwise.
- * */
-int projectAccess(const char *path)
-{
-	int result = access(path, W_OK);
-	return result;
-}
 
 /*set user as the owner of the current file or directory*/
 void setOwner(const char *path)
@@ -138,6 +128,42 @@ void read_config_file(char config_filename[], char* projectsdir[]) {
 		fclose(fp);
 }
 
+/*
+ * Check if user is in group
+ * Returns 0 if valid, 1 otherwise.
+ */
+int is_user_in_group(char group[])
+{	
+	int result = 1;
+	__uid_t uid = getuid();
+
+	struct passwd* pw = getpwuid(uid);
+	if(pw == NULL){
+		perror("getpwuid error: ");
+	}
+
+	int ngroups = 0;
+
+	//this call is just to get the correct ngroups
+	getgrouplist(pw->pw_name, pw->pw_gid, NULL, &ngroups);
+	__gid_t groups[ngroups];
+
+	//here we actually get the groups
+	getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups);
+
+
+	//example to print the groups name
+	for (int i = 0; i < ngroups; i++){
+		struct group* gr = getgrgid(groups[i]);
+		if(gr == NULL){
+			perror("getgrgid error: ");
+		}
+		if(strcmp(group,gr->gr_name))
+			result = 0;
+	}
+	return result;
+} 
+
 void usage(int status) {
 	if (status != EXIT_SUCCESS)
 		printf("Saisissez « prown --help » pour plus d'informations.\n");
@@ -162,8 +188,10 @@ int prownProject(char* path){
 	char projectPath[PATH_MAX]; /* List of project paths*/
 	int validargs=0,i,j,nbarg,status;
 	char* projectsroot[PATH_MAX];
-	char real_dir[PATH_MAX], projectroot[PATH_MAX];
+	char real_dir[PATH_MAX], projectroot[PATH_MAX],projectname[PATH_MAX];
+	char group[PATH_MAX],linux_group[PATH_MAX];
 	size_t lenprojectroot;
+	
 
 	read_config_file("/etc/prown.conf", projectsroot);
 	// if the real path is correct
@@ -172,23 +200,35 @@ int prownProject(char* path){
 		int isInProjectPath = 0;
 		for (i=0; i<nop ; i++)
 		{
-			if ((strstr(real_dir, projectsroot[i]) != NULL) && (strcmp(real_dir,projectsroot[i])))
+			int l=strlen(projectsroot[i]);
+			//if file in list of projects but not equal the project
+			if ((strncmp(real_dir, projectsroot[i],l)==0) && (strcmp(real_dir,projectsroot[i])))
 			{
 				strlcpy(projectroot,projectsroot[i],sizeof(projectroot));
 				isInProjectPath = 1;
-			}	
-		} 
-		lenprojectroot=strlen(projectroot);
+				// get the name of project
+				int h=l+1;
+				while (real_dir[h] !='\0' && real_dir[h] != '/')
+				{
+					h++;
+				}
+				memcpy(group, &real_dir[l+1],h-l-1);
+			}
+		}
+		strcpy(linux_group, "cl-pj-");
+		strcat(linux_group, group);
+		strcat(linux_group, "-admin");
 		//calculate the real path lengh of the project
 		lenprojectroot=strlen(projectroot);
 		// if the user hasn't access to the project 
-		if (projectAccess(real_dir) != 0) {
-			printf("Error: permission denied for project '%s' \n", real_dir);
+		if (!is_user_in_group(group)) {
+			printf("Error: permission denied for project \n");
+			printf("       you are not in '%s' group \n", linux_group);
 		}
 		// if the user passed path is in the ptoject path 
 		else if (isInProjectPath == 1)
 		{
-			printf("Setting owner of %s  directory %s to %d\n", path, real_dir, uid,lenprojectroot);
+			printf("Setting owner of1/init %s  directory %s to %d\n", path, real_dir, uid,lenprojectroot);
 			if (strlcpy(projectPath,real_dir,sizeof(projectPath)) >= sizeof(projectPath))
 				exit(1);
 			struct stat path_stat;
