@@ -158,10 +158,13 @@ int is_user_in_group(char group[])
 		if(gr == NULL){
 			perror("getgrgid error: ");
 		}
-		if(strcmp(group,gr->gr_name))
-			result = 0;
+		if(strcmp(group,gr->gr_name)==0)
+		{
+			printf("group of user: %s\n",gr->gr_name);
+			return 0;
+		}
 	}
-	return result;
+	return 1;
 } 
 
 void usage(int status) {
@@ -191,14 +194,15 @@ int prownProject(char* path){
 	char real_dir[PATH_MAX], projectroot[PATH_MAX],projectname[PATH_MAX];
 	char group[PATH_MAX],linux_group[PATH_MAX];
 	size_t lenprojectroot;
+	struct stat sb;
+	struct group *g;
 	
-
 	read_config_file("/etc/prown.conf", projectsroot);
 	// if the real path is correct
 	if (realpath(path, real_dir) != '\0')
 	{
 		int isInProjectPath = 0;
-		for (i=0; i<nop ; i++)
+		for (i=0; i<nop-1 ; i++)
 		{
 			int l=strlen(projectsroot[i]);
 			//if file in list of projects but not equal the project
@@ -206,29 +210,38 @@ int prownProject(char* path){
 			{
 				strlcpy(projectroot,projectsroot[i],sizeof(projectroot));
 				isInProjectPath = 1;
-				// get the name of project
+				// get the path of project
 				int h=l+1;
 				while (real_dir[h] !='\0' && real_dir[h] != '/')
 				{
 					h++;
 				}
-				memcpy(group, &real_dir[l+1],h-l-1);
+				memcpy(group, &real_dir[l],h-l);
+				strcpy(linux_group, projectroot);
+				strcat(linux_group, group);
+				//printf("Path: %s\n",linux_group);
+				if (stat(linux_group, &sb) == -1) {
+					perror("stat");
+					exit(EXIT_FAILURE);
+				}
+				//printf("Ownership: GID=%ld\n",(long) sb.st_gid);
+				g = getgrgid((long) sb.st_gid);
+				strcpy(linux_group, g->gr_name);
+				//printf("%s\n", linux_group);
+				
 			}
 		}
-		strcpy(linux_group, "cl-pj-");
-		strcat(linux_group, group);
-		strcat(linux_group, "-admin");
 		//calculate the real path lengh of the project
 		lenprojectroot=strlen(projectroot);
 		// if the user hasn't access to the project 
-		if (!is_user_in_group(group)) {
+		if (is_user_in_group(linux_group)==1) {	
 			printf("Error: permission denied for project \n");
 			printf("       you are not in '%s' group \n", linux_group);
 		}
 		// if the user passed path is in the ptoject path 
 		else if (isInProjectPath == 1)
 		{
-			printf("Setting owner of1/init %s  directory %s to %d\n", path, real_dir, uid,lenprojectroot);
+			printf("Setting owner of %s  directory %s to %d\n", path, real_dir, uid,lenprojectroot);
 			if (strlcpy(projectPath,real_dir,sizeof(projectPath)) >= sizeof(projectPath))
 				exit(1);
 			struct stat path_stat;
