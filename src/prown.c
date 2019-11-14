@@ -153,7 +153,8 @@ int is_user_in_group(char group[])
 
 
 	//example to print the groups name
-	for (int i = 0; i < ngroups; i++){
+        int i;
+	for (i = 0; i < ngroups; i++){
 		struct group* gr = getgrgid(groups[i]);
 		if(gr == NULL){
 			perror("getgrgid error: ");
