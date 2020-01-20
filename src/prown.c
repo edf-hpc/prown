@@ -54,7 +54,6 @@ void setOwner(const char *path)
 	}
 	//set rwx to user and rw to group if its not a symlink
 	struct stat buf;
-	int x = lstat (path, &buf);
 	if (!S_ISLNK(buf.st_mode))
 	{ 
 		if (chmod(path,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP) != 0)
@@ -136,7 +135,6 @@ void read_config_file(char config_filename[], char* projectsdir[]) {
  */
 int is_user_in_group(char group[])
 {	
-	int result = 1;
 	__uid_t uid = getuid();
 
 	struct passwd* pw = getpwuid(uid);
@@ -192,11 +190,10 @@ void usage(int status) {
 int prownProject(char* path){
 	uid_t uid=getuid();
 	char projectPath[PATH_MAX]; /* List of project paths*/
-	int validargs=0,i,j,nbarg,status;
+	int validargs=0,i;
 	char* projectsroot[PATH_MAX];
-	char real_dir[PATH_MAX], projectroot[PATH_MAX],projectname[PATH_MAX];
+	char real_dir[PATH_MAX], projectroot[PATH_MAX];
 	char group[PATH_MAX],linux_group[PATH_MAX];
-	size_t lenprojectroot;
 	struct stat sb;
 	struct group *g;
 	
@@ -234,8 +231,6 @@ int prownProject(char* path){
 				
 			}
 		}
-		//calculate the real path lengh of the project
-		lenprojectroot=strlen(projectroot);
 		// if the user hasn't access to the project 
 		if (is_user_in_group(linux_group)==1) {	
 			printf("Error: permission denied for project \n");
@@ -244,7 +239,7 @@ int prownProject(char* path){
 		// if the user passed path is in the ptoject path 
 		else if (isInProjectPath == 1)
 		{
-			printf("Setting owner of %s  directory %s to %d\n", path, real_dir, uid,lenprojectroot);
+			printf("Setting owner of %s  directory %s to %d\n", path, real_dir, uid);
 			if (strlcpy(projectPath,real_dir,sizeof(projectPath)) >= sizeof(projectPath))
 				exit(1);
 			struct stat path_stat;
@@ -258,9 +253,7 @@ int prownProject(char* path){
 			{
 				setOwner(projectPath);
 			}
-			status=projectOwner(projectPath);
 			validargs=1;
-			j++;
 		}
 		//The else case is  when the passed project is not in projects path
 		else
@@ -277,7 +270,6 @@ int prownProject(char* path){
 }
 
 int main(int argc, char **argv) {
-	int validargs=0;
 	char *options = "hv";
 	int longindex;
 	int opt;
