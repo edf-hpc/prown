@@ -33,6 +33,8 @@
 #include <grp.h>
 
 
+#define MAXLINE  1000
+
 /* static variable for verbose mode */ 
 static int verbose;
 /* number of project paths in config file */ 
@@ -106,13 +108,13 @@ void read_str_from_config_line(char* config_line, char* val) {
  * */
 void read_config_file(char config_filename[], char* projectsdir[]) {
 	FILE *fp;
-    	char buf[50];
+    	char buf[MAXLINE];
 	if ((fp=fopen(config_filename, "r")) == NULL) {
         	fprintf(stderr, "Failed to open config file %s \n", config_filename);
         	exit(EXIT_FAILURE);
     	}
     	while(! feof(fp)) {
-        	fgets(buf, 100, fp);
+        	fgets(buf, MAXLINE, fp);
         	if (buf[0] == '#' || strlen(buf) < 4) {
             	continue;
         	}	
