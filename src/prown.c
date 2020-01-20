@@ -92,13 +92,13 @@ int projectOwner(char *basepath){
 	}
     closedir(dir);
 	return status;
-}
+}		
 
 /*
  * Read lines from config file.
  * */
 void read_str_from_config_line(char* config_line, char* val) {    
-    	char prm_name[100];
+    	char prm_name[MAXLINE];
     	sscanf(config_line, "%s %s\n", prm_name, val);
 }
 
@@ -117,7 +117,7 @@ void read_config_file(char config_filename[], char* projectsdir[]) {
         	if (buf[0] == '#' || strlen(buf) < 4) {
             	continue;
         	}	
-        	if (strstr(buf, "PROJECTS_DIR ")) {
+        	if (strstr(buf, "PROJECT_DIR ")) {
 				if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
 					printf("Unable to allocate memory \n");
 					exit(1);
@@ -202,7 +202,7 @@ int prownProject(char* path){
 	if (realpath(path, real_dir) != '\0')
 	{
 		int isInProjectPath = 0;
-		for (i=0; i<nop-1 ; i++)
+		for (i=0; i<nop ; i++)
 		{
 			int l=strlen(projectsroot[i]);
 			//if file in list of projects but not equal the project
@@ -219,16 +219,22 @@ int prownProject(char* path){
 				memcpy(group, &real_dir[l],h-l);
 				strcpy(linux_group, projectroot);
 				strcat(linux_group, group);
-				//printf("Path: %s\n",linux_group);
+			    if(verbose == 1){
+					printf("Path: %s\n",linux_group);
+			    }
 				if (stat(linux_group, &sb) == -1) {
 					perror("stat");
 					exit(EXIT_FAILURE);
 				}
-				//printf("Ownership: GID=%ld\n",(long) sb.st_gid);
+				if(verbose == 1){
+					printf("Ownership: GID=%ld\n",(long) sb.st_gid);
+				}
 				g = getgrgid((long) sb.st_gid);
 				strcpy(linux_group, g->gr_name);
-				//printf("%s\n", linux_group);
-				
+				if(verbose == 1){
+					printf("%s\n", linux_group);
+				}
+				break;
 			}
 		}
 		// if the user hasn't access to the project 
