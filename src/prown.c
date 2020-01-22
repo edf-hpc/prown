@@ -250,14 +250,15 @@ int prownProject(char* path){
 				exit(1);
 			struct stat path_stat;
 			stat(projectPath, &path_stat);
+			//if it's a file we should call setOwner one time
 			if (path_stat.st_mode & S_IFREG)
 			{
 				printf("owning file %s\n", projectPath);
 				setOwner(projectPath);
 			}
-			if ((long)path_stat.st_uid != 0)
+			else
 			{
-				setOwner(projectPath);
+				projectOwner(projectPath);
 			}
 			validargs=1;
 		}
