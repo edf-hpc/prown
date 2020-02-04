@@ -238,7 +238,7 @@ int prownProject(char* path){
 			}
 		}
 		// if the user hasn't access to the project 
-		if (is_user_in_group(linux_group)==1) {	
+		if (is_user_in_group(linux_group)==1 && isInProjectPath == 1) {	
 			printf("Error: permission denied for project \n");
 			printf("       you are not in '%s' group \n", linux_group);
 		}
