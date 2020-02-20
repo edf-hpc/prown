@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5] - 2020-02-20
+
+### added
+
+- add execute right for group owner when prowning
+
+### fixed
+
+- fix error when prowning an empty subdirectory file
+
 ## [3.4] - 2020-02-04
 
 ### Changed
