@@ -56,7 +56,7 @@ void setOwner(const char *path)
 	struct stat buf;
 	if (!S_ISLNK(buf.st_mode))
 	{ 
-		if (chmod(path,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP) != 0)
+		if (chmod(path,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP) != 0)
 		{
 			perror("chmod");
 			exit(EXIT_FAILURE);
