@@ -55,8 +55,10 @@ void setOwner(const char *path)
 	//set rwx to user and rw to group if its not a symlink
 	struct stat buf;
 	if (!S_ISLNK(buf.st_mode))
-	{ 
-		if (chmod(path,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP) != 0)
+	{
+		struct stat st;
+        stat(path, &st);
+		if (chmod(path,S_IRGRP|S_IWGRP|st.st_mode) != 0)
 		{
 			perror("chmod");
 			exit(EXIT_FAILURE);
