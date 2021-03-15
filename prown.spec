@@ -1,6 +1,6 @@
 Name:     prown
 Version:  3.6
-Release:  1%{?dist}.edf
+Release:  2%{?dist}.edf
 Summary:  Prown is a simple tool to give users the possibility to own projects. 
 
 License:  GPL-3.0+
@@ -24,20 +24,23 @@ and chage recursively the owner of the directory to that user.
 make all
 
 %install
-install -d %{buildroot}%{_bindir}
-install -m4755 src/prown %{buildroot}%{_bindir}
-install -d %{buildroot}%{_sysconfdir}
-install -m0644 conf/prown.conf %{buildroot}%{_sysconfdir}
+mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}%{_sysconfdir}
+
+install -cp src/prown       %{buildroot}%{_bindir}
+install -cp conf/prown.conf %{buildroot}%{_sysconfdir}
 
 %clean
 rm -rf %{buildroot}
 
 %files
 %doc GPL-3.txt
-%defattr(-,root,root,-)
-%{_sysconfdir}/prown.conf
-%{_bindir}/prown
+%attr(0644,root,root) %{_sysconfdir}/prown.conf
+%attr(0755,root,root) %caps(cap_chown=ep) %{_bindir}/prown
 
 %changelog
-* Fri Feb 26 2021 Tàzio Gennuso <tazio-externe.gennuso@edf.fr> - 3.6-0
+* Mon Mar 15 2021 Tàzio Gennuso <tazio-externe.gennuso@edf.fr> - 3.6-2
+- remove suid from binary
+- add CAP_CHOWN capability to binary
+* Fri Feb 26 2021 Tàzio Gennuso <tazio-externe.gennuso@edf.fr> - 3.6-1
 - Initial el8 release
