@@ -54,6 +54,7 @@ void setOwner(const char *path)
 	}
 	//set rwx to user and rw to group if its not a symlink
 	struct stat buf;
+        lstat(path, &buf);
 	if (!S_ISLNK(buf.st_mode))
 	{
 		struct stat st;
