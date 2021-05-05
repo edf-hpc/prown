@@ -45,22 +45,19 @@ void setOwner(const char *path)
 {	
 	//use lchown to change owner for symlinks 
 	if(verbose == 1){
-			printf("changing owner of path %s\n",path);
+		printf("changing owner of path %s\n",path);
 	}
-    if (lchown(path,getuid(),(gid_t)-1) != 0)
-	{
+	if (lchown(path,getuid(),(gid_t)-1) != 0){
 		perror("chown");
 		exit(EXIT_FAILURE);
 	}
 	//set rwx to user and rw to group if its not a symlink
 	struct stat buf;
         lstat(path, &buf);
-	if (!S_ISLNK(buf.st_mode))
-	{
+	if (!S_ISLNK(buf.st_mode)){
 		struct stat st;
-        stat(path, &st);
-		if (chmod(path,S_IRGRP|S_IWGRP|st.st_mode) != 0)
-		{
+		stat(path, &st);
+		if (chmod(path,S_IRGRP|S_IWGRP|st.st_mode) != 0){
 			perror("chmod");
 			exit(EXIT_FAILURE);
 		}
@@ -76,28 +73,25 @@ int projectOwner(char *basepath){
 	struct stat buf;
 	lstat(basepath, &buf);
 	int status = 0;
-	if (!S_ISLNK(buf.st_mode))
-	{
-    char path[PATH_MAX];
-    struct dirent *dp;
-	DIR *dir = opendir(basepath);
-	// Unable to open directory stream
-	if (!dir)
-		return 1;
-	while ((dp = readdir(dir)) != NULL)
-	{
-		if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0 && strcmp(dp->d_name, basepath) != 0)
-		{
-			// Construct new path from our base path
-			if (strlcpy(path, basepath,sizeof(path)) >= sizeof(path))
-				exit(1);
-			strcat(path, "/");
-			strcat(path, dp->d_name);
-			projectOwner(path);
-			setOwner(path);	
+	if (!S_ISLNK(buf.st_mode)){
+		char path[PATH_MAX];
+		struct dirent *dp;
+		DIR *dir = opendir(basepath);
+		// Unable to open directory stream
+		if (!dir)
+			return 1;
+		while ((dp = readdir(dir)) != NULL){
+			if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0 && strcmp(dp->d_name, basepath) != 0){
+				// Construct new path from our base path
+				if (strlcpy(path, basepath,sizeof(path)) >= sizeof(path))
+					exit(1);
+				strcat(path, "/");
+				strcat(path, dp->d_name);
+				projectOwner(path);
+				setOwner(path);
+			}
 		}
-	}
-    closedir(dir);
+		closedir(dir);
 	}
 	return status;
 }		
@@ -123,18 +117,18 @@ void read_config_file(char config_filename[], char* projectsdir[]) {
     	while(! feof(fp)) {
         	fgets(buf, MAXLINE, fp);
         	if (buf[0] == '#' || strlen(buf) < 4) {
-            	continue;
+			continue;
         	}	
         	if (strstr(buf, "PROJECT_DIR ")) {
-				if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
-					printf("Unable to allocate memory \n");
-					exit(1);
-				}	
-            	read_str_from_config_line(buf, projectsdir[nop]);
-            	nop++;
+			if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
+				printf("Unable to allocate memory \n");
+				exit(1);
+			}
+			read_str_from_config_line(buf, projectsdir[nop]);
+			nop++;
         	}
     	}
-		fclose(fp);
+	fclose(fp);
 }
 
 /*
@@ -144,7 +138,6 @@ void read_config_file(char config_filename[], char* projectsdir[]) {
 int is_user_in_group(char group[])
 {	
 	__uid_t uid = getuid();
-
 	struct passwd* pw = getpwuid(uid);
 	if(pw == NULL){
 		perror("getpwuid error: ");
@@ -167,8 +160,7 @@ int is_user_in_group(char group[])
 		if(gr == NULL){
 			perror("getgrgid error: ");
 		}
-		if(strcmp(group,gr->gr_name)==0)
-		{
+		if(strcmp(group,gr->gr_name)==0){
 			printf("group of user: %s\n",gr->gr_name);
 			return 0;
 		}
@@ -179,8 +171,7 @@ int is_user_in_group(char group[])
 void usage(int status) {
 	if (status != EXIT_SUCCESS)
 		printf("Saisissez « prown --help » pour plus d'informations.\n");
-	else
-	{
+	else{
 		printf("Utilisation: prown[OPTION]... FICHIER...\n");
 		printf("Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE en PROPRIO actuel.\n");
 		printf("\n-v, --verbose          afficher en détail les fichiers modifiés\n");
@@ -207,29 +198,25 @@ int prownProject(char* path){
 	
 	read_config_file("/etc/prown.conf", projectsroot);
 	// if the real path is correct
-	if (realpath(path, real_dir) != '\0')
-	{
+	if (realpath(path, real_dir) != '\0'){
 		int isInProjectPath = 0;
-		for (i=0; i<nop ; i++)
-		{
+		for (i=0; i<nop ; i++){
 			int l=strlen(projectsroot[i]);
 			//if file in list of projects but not equal the project
-			if ((strncmp(real_dir, projectsroot[i],l)==0) && (strcmp(real_dir,projectsroot[i])))
-			{
+			if ((strncmp(real_dir, projectsroot[i],l)==0) && (strcmp(real_dir,projectsroot[i]))){
 				strlcpy(projectroot,projectsroot[i],sizeof(projectroot));
 				isInProjectPath = 1;
 				// get the path of project
 				int h=l+1;
-				while (real_dir[h] !='\0' && real_dir[h] != '/')
-				{
+				while (real_dir[h] !='\0' && real_dir[h] != '/'){
 					h++;
 				}
 				memcpy(group, &real_dir[l],h-l);
 				strcpy(projectdir, projectroot);
 				strcat(projectdir, group);
-			    if(verbose == 1){
+				if(verbose == 1){
 					printf("Project path: %s\n",projectdir);
-			    }
+				}
 				if (stat(projectdir, &sb) == -1) {
 					perror("stat");
 					exit(EXIT_FAILURE);
@@ -251,21 +238,18 @@ int prownProject(char* path){
 			printf("       you are not in '%s' group \n", linux_group);
 		}
 		// if the user passed path is in the ptoject path 
-		else if (isInProjectPath == 1)
-		{
+		else if (isInProjectPath == 1){
 			printf("Setting owner of %s  directory %s to %d\n", path, real_dir, uid);
 			if (strlcpy(projectPath,real_dir,sizeof(projectPath)) >= sizeof(projectPath))
 				exit(1);
 			struct stat path_stat;
 			stat(projectPath, &path_stat);
 			//if it's a file we should call setOwner one time
-			if (path_stat.st_mode & S_IFREG)
-			{
+			if (path_stat.st_mode & S_IFREG)			{
 				printf("owning file %s\n", projectPath);
 				setOwner(projectPath);
 			}
-			else
-			{
+			else{
 				//chown the projectPath if it's not the projectDir
 				// because projectOwner() doesn't chown the entry path
 				// but only the chlids
@@ -276,14 +260,12 @@ int prownProject(char* path){
 			validargs=1;
 		}
 		//The else case is  when the passed project is not in projects path
-		else
-		{
-				printf("You can't take rights everywhere. Directory '%s' will be ignored\n", path);
+		else{
+			printf("You can't take rights everywhere. Directory '%s' will be ignored\n", path);
 		}
 	}
-	else
-	{
-			printf("Warning: directory '%s' not found! (ignored)\n", path);
+	else{
+		printf("Warning: directory '%s' not found! (ignored)\n", path);
 	}
 
 	return validargs;
@@ -314,15 +296,12 @@ int main(int argc, char **argv) {
 		   break;
 		}
 	}
-	if ((argc == 1 || optind == argc)&&(help != 1))
-	{
+	if ((argc == 1 || optind == argc)&&(help != 1)){
 		error(0, 0, "opérande manquant");
 		usage(EXIT_FAILURE);
 	}
-	else
-	{
-		for(; optind < argc; optind++)
-		{	
+	else{
+		for(; optind < argc; optind++){
 			char *path = argv[optind];
 			prownProject(path);
 		}
