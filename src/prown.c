@@ -73,10 +73,14 @@ void setOwner(const char *path)
  * Returns 0 if valid, 1 otherwise.
  * */
 int projectOwner(char *basepath){
+	struct stat buf;
+	lstat(basepath, &buf);
+	int status = 0;
+	if (!S_ISLNK(buf.st_mode))
+	{
     char path[PATH_MAX];
     struct dirent *dp;
 	DIR *dir = opendir(basepath);
-    int status = 0;
 	// Unable to open directory stream
 	if (!dir)
 		return 1;
@@ -94,6 +98,7 @@ int projectOwner(char *basepath){
 		}
 	}
     closedir(dir);
+	}
 	return status;
 }		
 
