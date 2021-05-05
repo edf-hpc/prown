@@ -198,7 +198,7 @@ int prownProject(char* path){
 	
 	read_config_file("/etc/prown.conf", projectsroot);
 	// if the real path is correct
-	if (realpath(path, real_dir) != '\0'){
+	if (realpath(path, real_dir)){
 		int isInProjectPath = 0;
 		for (i=0; i<nop ; i++){
 			int l=strlen(projectsroot[i]);
