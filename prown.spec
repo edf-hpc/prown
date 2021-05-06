@@ -35,7 +35,7 @@ rm -rf %{buildroot}
 
 %files
 %doc GPL-3.txt
-%attr(0644,root,root) %{_sysconfdir}/prown.conf
+%attr(0644,root,root) %config %{_sysconfdir}/prown.conf
 %attr(0755,root,root) %caps(cap_chown=ep) %{_bindir}/prown
 
 %changelog
