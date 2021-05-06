@@ -1,6 +1,6 @@
 Name:     prown
-Version:  3.6
-Release:  2%{?dist}.edf
+Version:  3.7
+Release:  1%{?dist}.edf
 Summary:  Prown is a simple tool to give users the possibility to own projects. 
 
 License:  GPL-3.0+
@@ -39,6 +39,9 @@ rm -rf %{buildroot}
 %attr(0755,root,root) %caps(cap_chown=ep) %{_bindir}/prown
 
 %changelog
+* Thu May 06 2021 Mouad Bahi <mouad-externe.bahi@edf.fr> - 3.7-1
+- fix bug in symbolic link handling
+- align code lines
 * Mon Mar 15 2021 Tàzio Gennuso <tazio-externe.gennuso@edf.fr> - 3.6-2
 - remove suid from binary
 - add CAP_CHOWN capability to binary
