@@ -31,6 +31,7 @@
 #include "error.h"
 #include <getopt.h>
 #include <grp.h>
+#include <errno.h>
 
 
 #define MAXLINE  1000
@@ -73,13 +74,17 @@ int projectOwner(char *basepath){
 	struct stat buf;
 	lstat(basepath, &buf);
 	int status = 0;
+	int errnum;
 	if (!S_ISLNK(buf.st_mode)){
 		char path[PATH_MAX];
 		struct dirent *dp;
 		DIR *dir = opendir(basepath);
 		// Unable to open directory stream
-		if (!dir)
+		if (!dir) {
+			errnum = errno;
+			fprintf(stderr, "Failed to open directory '%s': %s (%d)\n", basepath, strerror(errnum), errnum);
 			return 1;
+		}
 		while ((dp = readdir(dir)) != NULL){
 			if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0 && strcmp(dp->d_name, basepath) != 0){
 				// Construct new path from our base path
