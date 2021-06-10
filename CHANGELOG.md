@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8] - 2021-06-10
+
+### fixed
+
+- fix recursivity
+
+### changed
+
+- Better error in permissions
+
 ## [3.7] - 2021-05-07
 
 ### fixed
