@@ -1,7 +1,7 @@
 /*
  * Prown is a simple tool developed to give users the possibility to 
  * own projects (files and repositories).
- * Copyright (C) 2019 EDF SA.
+ * Copyright (C) 2021 EDF SA.
 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,8 +87,8 @@ int projectOwner(char *basepath){
 					exit(1);
 				strcat(path, "/");
 				strcat(path, dp->d_name);
-				projectOwner(path);
 				setOwner(path);
+				projectOwner(path);
 			}
 		}
 		closedir(dir);
