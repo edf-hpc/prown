@@ -75,7 +75,7 @@ int projectOwner(char *basepath){
 	lstat(basepath, &buf);
 	int status = 0;
 	int errnum;
-	if (!S_ISLNK(buf.st_mode)){
+	if (S_ISDIR(buf.st_mode)){
 		char path[PATH_MAX];
 		struct dirent *dp;
 		DIR *dir = opendir(basepath);
