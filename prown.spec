@@ -1,6 +1,6 @@
 Name:     prown
 Version:  3.8
-Release:  1%{?dist}.edf
+Release:  2%{?dist}.edf
 Summary:  Prown is a simple tool to give users the possibility to own projects. 
 
 License:  GPL-3.0+
@@ -35,10 +35,12 @@ rm -rf %{buildroot}
 
 %files
 %doc GPL-3.txt
-%attr(0644,root,root) %config %{_sysconfdir}/prown.conf
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/prown.conf
 %attr(0755,root,root) %caps(cap_chown=ep) %{_bindir}/prown
 
 %changelog
+* Tue Jun 22 2021 Thomas HAMEL <thomas-t.hamel@edf.fr> - 3.8-2.el8.edf
+- Set config file as noreplace
 * Thu May 06 2021 Thomas <thomas-t.hamel@edf.fr> - 3.8-1.el8.edf
 - Bump to 3.8
 * Thu May 06 2021 Mouad Bahi <mouad-externe.bahi@edf.fr> - 3.7-2
