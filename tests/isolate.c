@@ -11,6 +11,7 @@
 #include <sched.h>
 #include <sys/mount.h>
 #include <errno.h>
+#include <limits.h>
 
 #define ERROR(fmt, ...) \
         do { fprintf(stderr, "ERROR: %s:%d:%s(): " fmt, __FILE__, \
@@ -368,6 +369,19 @@ int init_namespace(groupl_t *groups) {
 
 int launch_tests() {
 
+    char *env[] = { NULL };
+    char *path = malloc(PATH_MAX);
+
+
+    if(!getcwd(path, PATH_MAX)) {
+        ERROR("Unable to getcwd()");
+        return 1;
+    }
+    strncat(path, "/launch.py", PATH_MAX);
+
+    char *argv[] = { "/usr/bin/python3", path, NULL };
+
+    execve("/usr/bin/python3", argv, env);
     return 0;
 
 }
