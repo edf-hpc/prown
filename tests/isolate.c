@@ -350,10 +350,19 @@ int init_namespace(groupl_t *groups) {
     /* add groups in copy of /etc/group */
     append_groups("/tmp/custom-group", groups);
 
-   /* add users in copy of /etc/passwd */
+    /* add users in copy of /etc/passwd */
     append_users("/tmp/custom-passwd", groups);
 
     /* bind-mount copies of /etc/{passwd,group} */
+    if (mount("/tmp/custom-passwd", "/etc/passwd", NULL, MS_BIND, NULL)) {
+        ERROR("unable to bind-mount /etc/passwd: %s\n", strerror(errno));
+        return 1;
+    }
+
+    if (mount("/tmp/custom-group", "/etc/group", NULL, MS_BIND, NULL)) {
+        ERROR("unable to bind-mount /etc/group: %s\n", strerror(errno));
+        return 1;
+    }
 
 }
 
