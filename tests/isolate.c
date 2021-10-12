@@ -12,6 +12,7 @@
 #include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
+#include <libgen.h>
 
 #define ERROR(fmt, ...) \
         do { fprintf(stderr, "ERROR: %s:%d:%s(): " fmt, __FILE__, \
@@ -149,60 +150,6 @@ int db_add_user_in_group(groupl_t *groups, const char *groupname, char *username
 
 }
 
-int copy_file(const char *src, const char *dest) {
-
-    int src_fd, dest_fd;
-    size_t read_l = 0, write_l = 0, BUFFER_SIZE = 100 * 1024; // 100kb
-    void *buf = malloc(BUFFER_SIZE);
-
-    src_fd = open(src, O_RDONLY);
-    if (src_fd == -1) {
-        ERROR("unable to open() %s\n", src, strerror(errno));
-        return 1;
-    }
-
-    read_l = read(src_fd, buf, BUFFER_SIZE);
-    if (read_l == -1) {
-        ERROR("unable to read() %s: %s\n", src, strerror(errno));
-        close(src_fd);
-        free(buf);
-        return 1;
-    }
-    if (read_l == BUFFER_SIZE) {
-        ERROR("BUFFER_SIZE reached on read() %s\n", src);
-        close(src_fd);
-        free(buf);
-        return 1;
-    }
-    close(src_fd);
-
-    /* create new file with mode 0644 */
-
-    dest_fd = open(dest, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (dest_fd == -1) {
-        ERROR("unable to open() %s\n", dest, strerror(errno));
-        free(buf);
-        return 1;
-    }
-
-    write_l = write(dest_fd, buf, read_l);
-    if (write_l == -1) {
-        ERROR("unable to write() %s\n", dest, strerror(errno));
-        close(dest_fd);
-        free(buf);
-        return 1;
-    }
-    if (write_l == BUFFER_SIZE) {
-        ERROR("BUFFER_SIZE reached on write() %s\n", dest);
-        close(dest_fd);
-        free(buf);
-        return 1;
-    }
-    close(dest_fd);
-
-    return 0;
-}
-
 int append_groups(const char *path, groupl_t *groups) {
 
     int path_fd;
@@ -306,77 +253,123 @@ int append_users(const char *path, groupl_t *groups) {
 
 int init_namespace(groupl_t *groups) {
 
-    if (unshare(CLONE_NEWNS|CLONE_NEWPID)) { // requires CAP_SYS_ADMIN, see mount_namespaces(7)
+    /*
+     * Create a mount namespace to create a test environment based on the
+     * current system without modification on this system.
+     */
+
+    DEBUG("creating mount namespace\n");
+    if (unshare(CLONE_NEWNS)) { // requires CAP_SYS_ADMIN, see mount_namespaces(7)
         ERROR("unable to unshare(): %s\n", strerror(errno));
         return 1;
     }
 
-    /* Make / read-only to avoid weird operation on the system.
+    /*
+     * Make / private to the namespace (ie. specific peer-group) to avoid
+     * propagation of subsequents mounts on the system.
+     */
+    if (mount("none", "/", NULL, MS_REC|MS_PRIVATE, NULL)) {
+        ERROR("error make / MS_PRIVATE: %s\n", strerror(errno));
+        return 1;
+    }
+
+    /*
+     * Create small tmpfs FS on arbitrary mount point /mnt. In this FS, create
+     * mount point for an RW overlay over /.
      *
-     * Unfortunately, remount / with ro option fails:
-     *   mount(NULL, "/", NULL, MS_REMOUNT | MS_RDONLY, NULL) → EBUSY
      *
-     * The workaround is to bind-mount / with ro option and unmount
-     * underlying /. In shell, it gives:
-     *
-     *   $ sudo unshare -m /bin/bash
-     *   # mount -o bind,ro / /
-     *   # umount /
-     *   # touch /test → fails with EROFS
-     *   # grep ' / / ' /proc/self/mountinfo
-     *   311 310 254:0 / / ro,relatime - ext4 /dev/mapper/root rw,discard,data=ordered
-     *
+     *   /              o-------+ (lower [RO])
+     *   |                      |
+     *   +- mnt/                |
+     *       |                  |
+     *     (tmpfs)              |
+     *       |                  |
+     *       +- root/   o-------+ (upper [RW])
+     *       +- work/   o-------+ (workdir)
+     *       +- merged/ <-------+
      */
 
-    if (mount("/", "/", NULL, MS_BIND | MS_RDONLY, NULL)) {
-        ERROR("unable to bind-mount / read-only: %s\n", strerror(errno));
+    DEBUG("creating tmpfs\n");
+    if (mount("tmpfs", "/mnt", "tmpfs", 0, "size=64M")) {
+        ERROR("unable to create tmpfs: %s\n", strerror(errno));
         return 1;
     }
 
-    if (umount("/")) {
-        ERROR("unable to unmount /: %s\n", strerror(errno));
+    /* mkdir 755 */
+    if (mkdir("/mnt/merged", S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) {
+        ERROR("unable to mkdir %s: %s\n", "/mnt/root", strerror(errno));
         return 1;
     }
 
-    /* copy /etc/{passwd,group} */
-    if (copy_file("/etc/passwd", "/tmp/custom-passwd")) {
-        ERROR("unable to copy /etc/passwd\n");
+    if (mkdir("/mnt/root", S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) {
+        ERROR("unable to mkdir %s: %s\n", "/mnt/root", strerror(errno));
         return 1;
     }
-    if (copy_file("/etc/group", "/tmp/custom-group")) {
-        ERROR("unable to copy /etc/group\n");
+
+    if (mkdir("/mnt/work", S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) {
+        ERROR("unable to mkdir %s: %s\n", "/mnt/work", strerror(errno));
+        return 1;
+    }
+
+    DEBUG("creating overlay\n");
+    if (mount("overlay", "/mnt/merged", "overlay", 0, "lowerdir=/,upperdir=/mnt/root,workdir=/mnt/work")) {
+        ERROR("unable to mount overlayfs: %s\n", strerror(errno));
+        return 1;
+    }
+
+
+    /* Then prepare the /mnt/merged for chroot with /proc and binded /tmp:
+     *
+     *   / o------------------o
+     *   |                    |
+     *   +- mnt/              |
+     *   |   |            [2. chroot]
+     *   | (tmpfs)            |
+     *   |   |                |
+     *   |   +- merged/  <----+
+     *   |       |
+     *   |       + proc/ <----o [3. procfs]
+     *   |       + tmp/  <----+
+     *   |                    | [1. bind]
+     *   + tmp/  o------------+
+     */
+    DEBUG("bind-mount /tmp\n");
+    if (mount("/tmp", "/mnt/merged/tmp", NULL, MS_BIND, NULL)) {
+        ERROR("unable to bind-mount /tmp: %s\n", strerror(errno));
+        return 1;
+    }
+
+    DEBUG("chroot\n");
+    chroot("/mnt/merged");
+
+    DEBUG("mounting /proc\n");
+    if (mount("proc", "/proc", "proc", 0, NULL)) {
+        ERROR("unable to mount /proc: %s\n", strerror(errno));
         return 1;
     }
 
     /* add groups in copy of /etc/group */
-    append_groups("/tmp/custom-group", groups);
+    append_groups("/etc/group", groups);
 
     /* add users in copy of /etc/passwd */
-    append_users("/tmp/custom-passwd", groups);
-
-    /* bind-mount copies of /etc/{passwd,group} */
-    if (mount("/tmp/custom-passwd", "/etc/passwd", NULL, MS_BIND, NULL)) {
-        ERROR("unable to bind-mount /etc/passwd: %s\n", strerror(errno));
-        return 1;
-    }
-
-    if (mount("/tmp/custom-group", "/etc/group", NULL, MS_BIND, NULL)) {
-        ERROR("unable to bind-mount /etc/group: %s\n", strerror(errno));
-        return 1;
-    }
+    append_users("/etc/passwd", groups);
 
 }
 
 int launch_tests() {
 
     char *env[] = { NULL };
-    char *path = malloc(PATH_MAX);
+    char *path;
+    char *bin_path = malloc(PATH_MAX);
 
+    /* Look for launch.py in the directory of the current binary */
 
-    if(!getcwd(path, PATH_MAX)) {
-        ERROR("Unable to getcwd()");
+    if(readlink("/proc/self/exe", bin_path, PATH_MAX) == -1) {
+        ERROR("unable to readlink(): %s\n", strerror(errno));
         return 1;
     }
+    path = dirname(bin_path);
+
     strncat(path, "/launch.py", PATH_MAX);
 
     char *argv[] = { "/usr/bin/python3", path, NULL };
