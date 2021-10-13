@@ -7,6 +7,8 @@ import glob
 import yaml
 import hashlib
 import pwd
+import grp
+import stat
 import subprocess
 
 TESTS_DEFS_YML='defs.yml'
@@ -48,12 +50,13 @@ class UsersDB(object):
 
 class TestDef(object):
 
-    def __init__(self, name, prepare, user, cmd, exitcode, stdout, stderr):
+    def __init__(self, name, prepare, user, cmd, exitcode, stat, stdout, stderr):
         self.name = name
         self.prepare = prepare
         self.user = user
         self.cmd = cmd
         self.exitcode = exitcode
+        self.stat = stat
         if stdout:
             self.stdout = stdout.encode('utf-8')
         else:
@@ -119,12 +122,40 @@ def load_tests_defs():
                                      xtest['user'],
                                      xtest['cmd'],
                                      xtest['exitcode'],
+                                     xtest.get('stat'),
                                      xtest['stdout'],
                                      xtest['stderr']))
         except yaml.YAMLError as exc:
             print(exc)
 
     return tests
+
+def check_stat(test):
+
+    ok = True
+    if not test.stat:
+        return ok
+
+    for path, perms in test.stat.items():
+        abspath = os.path.join(projects_dir, path)
+        filestat = os.stat(abspath)
+        if 'owner' in perms:
+            found = pwd.getpwuid(filestat.st_uid).pw_name
+            if found != perms['owner']:
+                print("owner check on file %s failed (%s!=%s)" % (path, found, perms['owner']))
+                ok = False
+        if 'group' in perms:
+            found = grp.getgrgid(filestat.st_gid).gr_name
+            if found != perms['group']:
+                print("group check on file %s failed (%s!=%s)" % (path, found, perms['group']))
+                ok = False
+        if 'mode' in perms:
+            found = oct(stat.S_IMODE(filestat.st_mode))
+            if found != perms['mode']:
+                print("mode check on file %s failed (%s!=%s)" % (path, found, perms['mode']))
+                ok = False
+
+    return ok
 
 def cmp_output(output, captured, expected):
 
@@ -162,6 +193,8 @@ def run_test(test):
     run = subprocess.run(cmd, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
     if run.returncode != test.exitcode:
          print("test %s failed, exit code %d is different from expected exit code %d" % (test.name, run.returncode, test.exitcode))
+    if not check_stat(test):
+         print("test %s failed, expected stats are not conform" % (test.name))
     if cmp_output('stdout', run.stdout, test.stdout):
          print("test %s failed, stdout is not conform" % (test.name))
     if cmp_output('stderr', run.stderr, test.stderr):
