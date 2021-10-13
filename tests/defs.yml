@@ -1,0 +1,106 @@
+usersdb:
+  first_uid: 100001
+  first_gid: 100001
+  groups:
+    physic:
+      - mike
+      - anna
+    biology:
+      - marie
+      - john
+
+tests:
+
+  - name: Fail without arg
+    prepare: null
+    user: mike
+    cmd: $BIN$
+    exitcode: 0
+    stdout: |
+      Saisissez « prown --help » pour plus d'informations.
+    stderr: |
+      $TMPDIR$/src/prown: opérande manquant
+
+  - name: User cannot prown outside project directory
+    prepare: null
+    user: john
+    cmd: $BIN$ /root
+    exitcode: 0
+    stat:
+      /root:  # check permissions of /root did not changed
+        owner: root
+        group: root
+    stdout: |
+      You can't take rights everywhere. Directory '/root' will be ignored
+    stderr: null
+
+  - name: User not in owner group cannot prown project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stdout: |
+      Error: permission denied for project 
+             you are not in 'physic' group 
+    stderr: null
+
+  - name: User can prown project but it does not change ownership of project root
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+    stdout: |
+      group of user: physic
+      Setting owner of lhc  directory /var/tmp/projects/lhc to $UID$
+    stderr: null
+
+  - name: User in owner group can prown project and become owner of project files
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: mike  # prown has changed from anna to mike after recursive work into lhc
+        group: physic
+    stdout: |
+      group of user: physic
+      Setting owner of lhc  directory /var/tmp/projects/lhc to $UID$
+    stderr: null
+
+  - name: User in owner group can prown directely pointed project file
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: mike
+    cmd: $BIN$ lhc/data
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: mike  # prown has changed from anna to mike
+        group: physic
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/data  directory /var/tmp/projects/lhc/data to $UID$
+      owning file /var/tmp/projects/lhc/data
+    stderr: null
