@@ -41,9 +41,11 @@ class UsersDB(object):
 
     def add_group(self, group, users):
 
+        print("new group %s [%d]" % (group, self.next_gid))
         new_group = UsersGroup(group, self.next_gid)
         self.next_gid+=1
         for user in users:
+            print("new user %s in group %s [%d]" % (user, group, self.next_uid))
             new_group.add_user(user, self.next_uid)
             self.next_uid+=1
         self.groups.append(new_group)
