@@ -147,7 +147,30 @@ def cmp_output(output, captured, expected):
         return 1
     return 0
 
+def run_test(test):
+
+    uid = pwd.getpwnam(test.user).pw_uid
+    gid = pwd.getpwnam(test.user).pw_gid
+
+    os.setgid(gid)
+    os.setuid(uid)
+
+    cmd = test.cmd.replace('$BIN$', prown_path).split(' ')
+
+    print("running cmd %s" % (str(cmd)))
+    run = subprocess.run(cmd, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
+    if run.returncode != test.exitcode:
+         print("test %s failed, exit code %d is different from expected exit code %d" % (test.name, run.returncode, test.exitcode))
+    if cmp_output('stdout', run.stdout, test.stdout):
+         print("test %s failed, stdout is not conform" % (test.name))
+    if cmp_output('stderr', run.stderr, test.stderr):
+         print("test %s failed, stderr is not conform" % (test.name))
+
+    # terminate child process
+    sys.exit(0)
+
 def run_tests(tests):
+
     for test in tests:
 
         if test.prepare:
@@ -156,27 +179,16 @@ def run_tests(tests):
                 script_fh.write(test.prepare)
             subprocess.run(['/bin/sh', script_path], cwd=projects_dir)
 
-        uid = pwd.getpwnam(test.user).pw_uid
-
-        os.seteuid(uid)
-        cmd = test.cmd.replace('$BIN$', prown_path).split(' ')
-
-        print("running cmd %s" % (str(cmd)))
-        run = subprocess.run(cmd, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
-        if run.returncode != test.exitcode:
-            print("test %s failed, exit code %d is different from expected exit code %d" % (test.name, run.returncode, test.exitcode))
-        if cmp_output('stdout', run.stdout, test.stdout):
-            print("test %s failed, stdout is not conform" % (test.name))
-        if cmp_output('stderr', run.stderr, test.stderr):
-            print("test %s failed, stderr is not conform" % (test.name))
-
-        os.seteuid(0)
+        pid = os.fork()
+        if pid:
+            os.wait()
+        else:
+            run_test(test)
+            # child leaves the program in run_test()
 
         # remove tests data in projects directory
         for path in glob.glob(os.path.join(projects_dir, '*')):
             shutil.rmtree(path)
-
-    pass
 
 
 if __name__ == '__main__':
