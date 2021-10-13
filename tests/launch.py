@@ -52,8 +52,14 @@ class TestDef(object):
         self.user = user
         self.cmdargs = cmdargs
         self.exitcode = exitcode
-        self.stdout = stdout.encode('utf-8')
-        self.stderr = stderr.encode('utf-8')
+        if stdout:
+            self.stdout = stdout.encode('utf-8')
+        else:
+            self.stdout = None
+        if stderr:
+            self.stderr = stderr.encode('utf-8')
+        else:
+            self.stderr = None
 
 def init_test_env(usersdb):
 
@@ -120,8 +126,16 @@ def load_tests_defs():
 
 def cmp_output(output, captured, expected):
 
-    expected = expected.replace(b"$TMPDIR$", tmpdir.encode('utf-8'))
-    if captured != expected:
+    report_error = False
+    if expected is None:
+        if len(captured):
+            report_error = True
+            expected = "ø\n".encode('utf-8')
+    else:
+        expected = expected.replace(b"$TMPDIR$", tmpdir.encode('utf-8'))
+        if captured != expected:
+           report_error = True
+    if report_error:
         print("----- [captured %s begin] -----" % (output))
         sys.stdout.buffer.write(captured)
         print("----- [captured %s end] -----" % (output))
