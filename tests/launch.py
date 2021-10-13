@@ -2,6 +2,8 @@
 
 import os
 import sys
+import shutil
+import glob
 import yaml
 import hashlib
 import pwd
@@ -170,6 +172,10 @@ def run_tests(tests):
             print("test %s failed, stderr is not conform" % (test.name))
 
         os.seteuid(0)
+
+        # remove tests data in projects directory
+        for path in glob.glob(os.path.join(projects_dir, '*')):
+            shutil.rmtree(path)
 
     pass
 
