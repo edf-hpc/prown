@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -10,11 +11,25 @@ import pwd
 import grp
 import stat
 import subprocess
+import codecs
+import sys
+import textwrap
 
 TESTS_DEFS_YML='defs.yml'
 
 tmpdir = None
 projects_dir = '/var/tmp/projects'
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 class User(object):
 
@@ -59,14 +74,8 @@ class TestDef(object):
         self.cmd = cmd
         self.exitcode = exitcode
         self.stat = stat
-        if stdout:
-            self.stdout = stdout.encode('utf-8')
-        else:
-            self.stdout = None
-        if stderr:
-            self.stderr = stderr.encode('utf-8')
-        else:
-            self.stderr = None
+        self.stdout = stdout
+        self.stderr = stderr
 
 def init_test_env(usersdb):
 
@@ -93,6 +102,12 @@ def init_test_env(usersdb):
                 for user in group.users:
                      line = "%s:x:%u:%u::/tmp:/bin/false\n" % (user.name, user.uid, group.gid)
                      passwd_fh.write(line)
+
+def warn(msg):
+    print(bcolors.FAIL + msg + bcolors.ENDC)
+
+def success(msg):
+    print(bcolors.OKGREEN + msg + bcolors.ENDC)
 
 def load_userdb():
 
@@ -134,9 +149,10 @@ def load_tests_defs():
 
 def check_stat(test):
 
-    ok = True
+    msg = ""
+
     if not test.stat:
-        return ok
+        return None
 
     for path, perms in test.stat.items():
         abspath = os.path.join(projects_dir, path)
@@ -144,20 +160,19 @@ def check_stat(test):
         if 'owner' in perms:
             found = pwd.getpwuid(filestat.st_uid).pw_name
             if found != perms['owner']:
-                print("owner check on file %s failed (%s!=%s)" % (path, found, perms['owner']))
-                ok = False
+                msg += "owner check on file %s failed (%s!=%s)\n" % (path, found, perms['owner'])
         if 'group' in perms:
             found = grp.getgrgid(filestat.st_gid).gr_name
             if found != perms['group']:
-                print("group check on file %s failed (%s!=%s)" % (path, found, perms['group']))
-                ok = False
+                msg += "group check on file %s failed (%s!=%s)\n" % (path, found, perms['group'])
         if 'mode' in perms:
             found = oct(stat.S_IMODE(filestat.st_mode))
             if found != perms['mode']:
-                print("mode check on file %s failed (%s!=%s)" % (path, found, perms['mode']))
-                ok = False
+                msg += "mode check on file %s failed (%s!=%s)\n" % (path, found, perms['mode'])
 
-    return ok
+    if not len(msg):
+        return None
+    return msg
 
 def cmp_output(output, captured, expected):
 
@@ -165,21 +180,22 @@ def cmp_output(output, captured, expected):
     if expected is None:
         if len(captured):
             report_error = True
-            expected = "ø\n".encode('utf-8')
+            expected = "ø\n"
     else:
-        expected = expected.replace(b"$TMPDIR$", tmpdir.encode('utf-8'))
-        expected = expected.replace(b"$UID$", str(os.getuid()).encode('utf-8'))
+        expected = expected.replace("$TMPDIR$", tmpdir)
+        expected = expected.replace("$UID$", str(os.getuid()))
         if captured != expected:
            report_error = True
     if report_error:
-        print("----- [captured %s begin] -----" % (output))
-        sys.stdout.buffer.write(captured)
-        print("----- [captured %s end] -----" % (output))
-        print("----- [expected %s begin] -----" % (output))
-        sys.stdout.buffer.write(expected)
-        print("----- [expected %s end] -----" % (output))
-        return 1
-    return 0
+        msg  = "----- [captured %s begin] -----\n" % (output)
+        msg += captured
+        msg += "-----  [captured %s end]  -----\n" % (output)
+        msg += "----- [expected %s begin] -----\n" % (output)
+        msg += expected
+        msg += "-----  [expected %s end]  -----\n" % (output)
+        return msg
+
+    return None
 
 def run_test(test):
 
@@ -191,16 +207,28 @@ def run_test(test):
 
     cmd = test.cmd.replace('$BIN$', prown_path).split(' ')
 
-    print("running cmd %s" % (str(cmd)))
+    errors = []
     run = subprocess.run(cmd, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
     if run.returncode != test.exitcode:
-         print("test %s failed, exit code %d is different from expected exit code %d" % (test.name, run.returncode, test.exitcode))
-    if not check_stat(test):
-         print("test %s failed, expected stats are not conform" % (test.name))
-    if cmp_output('stdout', run.stdout, test.stdout):
-         print("test %s failed, stdout is not conform" % (test.name))
-    if cmp_output('stderr', run.stderr, test.stderr):
-         print("test %s failed, stderr is not conform" % (test.name))
+         errors.append("exit code %d is different from expected exit code %d\n" % (run.returncode, test.exitcode))
+
+    msg = check_stat(test)
+    if msg:
+         errors.append("expected stats are not conform:\n %s" % (msg))
+    msg = cmp_output('stdout', run.stdout.decode('utf-8'), test.stdout)
+    if msg:
+         errors.append("stdout is not conform:\n %s" % (msg))
+    msg = cmp_output('stderr', run.stderr.decode('utf-8'), test.stderr)
+    if msg:
+         errors.append("stderr is not conform:\n %s" % (msg))
+
+    if len(errors):
+       warn(u"❌test « %s » failed, errors:" % (test.name))
+       for error in errors:
+           warn(textwrap.indent(error, '  + ', lambda line: True))
+    else:
+       success(u"✓ test « %s » succeeded" % (test.name))
+
 
     # terminate child process
     sys.exit(0)

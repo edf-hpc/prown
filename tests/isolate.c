@@ -121,7 +121,7 @@ int init_namespace() {
 
 int launch_tests() {
 
-    char *env[] = { NULL };
+    char *env[] = { "PYTHONIOENCODING=utf-8", NULL };
     char *path;
     char *bin_path = malloc(PATH_MAX);
 
