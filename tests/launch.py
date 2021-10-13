@@ -135,6 +135,7 @@ def cmp_output(output, captured, expected):
             expected = "ø\n".encode('utf-8')
     else:
         expected = expected.replace(b"$TMPDIR$", tmpdir.encode('utf-8'))
+        expected = expected.replace(b"$UID$", str(os.getuid()).encode('utf-8'))
         if captured != expected:
            report_error = True
     if report_error:
