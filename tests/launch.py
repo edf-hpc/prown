@@ -48,11 +48,11 @@ class UsersDB(object):
 
 class TestDef(object):
 
-    def __init__(self, name, prepare, user, cmdargs, exitcode, stdout, stderr):
+    def __init__(self, name, prepare, user, cmd, exitcode, stdout, stderr):
         self.name = name
         self.prepare = prepare
         self.user = user
-        self.cmdargs = cmdargs
+        self.cmd = cmd
         self.exitcode = exitcode
         if stdout:
             self.stdout = stdout.encode('utf-8')
@@ -117,7 +117,7 @@ def load_tests_defs():
                 tests.append(TestDef(xtest['name'],
                                      xtest['prepare'],
                                      xtest['user'],
-                                     xtest['cmdargs'],
+                                     xtest['cmd'],
                                      xtest['exitcode'],
                                      xtest['stdout'],
                                      xtest['stderr']))
@@ -159,9 +159,8 @@ def run_tests(tests):
         uid = pwd.getpwnam(test.user).pw_uid
 
         os.seteuid(uid)
-        cmd = [ prown_path ]
-        if test.cmdargs:
-            cmd.extend(test.cmdargs.split(' '))
+        cmd = test.cmd.replace('$BIN$', prown_path).split(' ')
+
         print("running cmd %s" % (str(cmd)))
         run = subprocess.run(cmd, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
         if run.returncode != test.exitcode:
