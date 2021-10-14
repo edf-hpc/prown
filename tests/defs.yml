@@ -104,3 +104,101 @@ tests:
       Setting owner of lhc/data  directory /var/tmp/projects/lhc/data to $UID$
       owning file /var/tmp/projects/lhc/data
     stderr: null
+
+  - name: Prown does not follow symlink to file inside project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/source
+        touch lhc/source/data
+        mkdir lhc/target
+        touch lhc/target/symlink
+        ln -s ../target/symlink lhc/source/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/source
+    exitcode: 0
+    stat:
+      lhc/source/data:
+        owner: mike
+      lhc/source/symlink:
+        owner: mike  # prown has changed owner of the source of the symlink
+      lhc/target/symlink:
+        owner: anna  # prown did not change symlink target owner inside project directory
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/source  directory /var/tmp/projects/lhc/source to $UID$
+    stderr: null
+
+  - name: Prown does not follow symlink to directory inside project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/source
+        touch lhc/source/data
+        mkdir lhc/target
+        touch lhc/target/data
+        ln -s ../target lhc/source/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/source
+    exitcode: 0
+    stat:
+      lhc/source/data:
+        owner: mike
+      lhc/source/symlink:
+        owner: mike  # prown has changed owner of the source of the symlink
+      lhc/target:
+        owner: anna  # prown did not change symlink target directory
+      lhc/target/data:
+        owner: anna  # prown did not change owner inside directory pointed by the symlink
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/source  directory /var/tmp/projects/lhc/source to $UID$
+    stderr: null
+
+  - name: Prown does not follow symlink outside project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        ln -s /root lhc/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      /root:
+        owner: root # prown did not change symlink target owner outside project directory
+    stdout: |
+      group of user: physic
+      Setting owner of lhc  directory /var/tmp/projects/lhc to $UID$
+    stderr: null
+
+  - name: Prown does not fail with symlink pointing to not accessible target
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/source
+        touch lhc/source/data
+        ln -s fail lhc/source/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/source
+    exitcode: 0
+    stat:
+      lhc/source/data:
+        owner: mike
+      lhc/source/symlink:
+        owner: mike  # prown has changed owner of the source of the symlink even if its target is not accessible
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/source  directory /var/tmp/projects/lhc/source to $UID$
+    stderr: null
