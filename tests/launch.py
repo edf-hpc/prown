@@ -227,6 +227,7 @@ def run_test(test):
 
     cmd = test.cmd.replace('$BIN$', prown_path).split(' ')
 
+    status = 0
     errors = []
     run = subprocess.run(cmd, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
     if run.returncode != test.exitcode:
@@ -246,17 +247,19 @@ def run_test(test):
        warn(u"❌test « %s » failed, errors:" % (test.name))
        for error in errors:
            warn(textwrap.indent(error, '  + ', lambda line: True))
+       status = 1
     else:
        success(u"✓ test « %s » succeeded" % (test.name))
 
-
     # terminate child process
-    sys.exit(0)
+    sys.exit(status)
 
 def run_tests(tests):
 
+    nb_tests = 0
+    nb_errors = 0
     for test in tests:
-
+        nb_tests += 1
         if test.prepare:
             script_path = os.path.join(tmpdir, hashlib.sha224(test.name.encode('utf-8')).hexdigest() + '.sh')
             with open(script_path, 'w+') as script_fh:
@@ -265,7 +268,8 @@ def run_tests(tests):
 
         pid = os.fork()
         if pid:
-            os.wait()
+            status = os.wait()
+            nb_errors += status[1]>>8
         else:
             run_test(test)
             # child leaves the program in run_test()
@@ -273,6 +277,8 @@ def run_tests(tests):
         # remove tests data in projects directory
         for path in glob.glob(os.path.join(projects_dir, '*')):
             shutil.rmtree(path)
+
+    print("%d tests | %d ok | %d failed" % (nb_tests, (nb_tests-nb_errors), nb_errors))
 
 
 if __name__ == '__main__':
