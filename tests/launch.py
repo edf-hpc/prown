@@ -83,12 +83,13 @@ class UsersDB(object):
 
 class TestDef(object):
 
-    def __init__(self, name, prepare, tree, user, cmd, exitcode, stat, stdout, stderr):
+    def __init__(self, name, prepare, tree, user, cmd, shell, exitcode, stat, stdout, stderr):
         self.name = name
         self.prepare = prepare
         self.tree = tree
         self.user = user
         self.cmd = cmd
+        self.shell = shell
         self.exitcode = exitcode
         self.stat = stat
         self.stdout = stdout
@@ -159,6 +160,7 @@ def load_tests_defs():
                                      xtest.get('tree', False),
                                      xtest['user'],
                                      xtest['cmd'],
+                                     xtest.get('shell', False),
                                      xtest['exitcode'],
                                      xtest.get('stat'),
                                      xtest['stdout'],
@@ -230,11 +232,14 @@ def run_test(test):
     os.setgid(gid)
     os.setuid(uid)
 
-    cmd = test.cmd.replace('$BIN$', prown_path).split(' ')
+    cmd = test.cmd.replace('$BIN$', prown_path)
+
+    if not test.shell:
+        cmd = cmd.split(' ')
 
     status = 0
     errors = []
-    run = subprocess.run(cmd, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
+    run = subprocess.run(cmd, shell=test.shell, cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={ 'LANG': 'C'})
     if run.returncode != test.exitcode:
          errors.append("exit code %d is different from expected exit code %d\n" % (run.returncode, test.exitcode))
 
