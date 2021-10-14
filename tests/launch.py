@@ -31,7 +31,7 @@ import codecs
 import sys
 import textwrap
 
-TESTS_DEFS_YML='defs.yml'
+TESTS_DEFS_YML='tests/defs.yml'
 
 tmpdir = None
 projects_dir = '/var/tmp/projects'

@@ -25,8 +25,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo compiling
-gcc -o isolate isolate.c
 echo copy into $TMPDIR
 cp -a $(dirname $0)/.. $TMPDIR/
 # set required capability on prown binary
