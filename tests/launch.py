@@ -111,13 +111,16 @@ def init_test_env(usersdb):
 
     # add user/groups in /etc/{passwd,group}
     with open('/etc/passwd', 'a') as passwd_fh:
-        with open('/etc/group', 'a') as group_fh:
-            for group in usersdb.groups:
-                line = "%s:x:%u:%s\n" % (group.name, group.gid, ','.join([ user.name for user in group.users ]));
-                group_fh.write(line)
-                for user in group.users:
-                     line = "%s:x:%u:%u::/tmp:/bin/false\n" % (user.name, user.uid, group.gid)
-                     passwd_fh.write(line)
+        with open('/etc/shadow', 'a') as shadow_fh:
+            with open('/etc/group', 'a') as group_fh:
+                for group in usersdb.groups:
+                    line = "%s:x:%u:%s\n" % (group.name, group.gid, ','.join([ user.name for user in group.users ]));
+                    group_fh.write(line)
+                    for user in group.users:
+                         line = "%s:x:%u:%u::/tmp:/bin/false\n" % (user.name, user.uid, group.gid)
+                         passwd_fh.write(line)
+                         line = "%s::::::::\n" % (user.name)
+                         shadow_fh.write(line)
 
 def warn(msg):
     print(bcolors.FAIL + msg + bcolors.ENDC)
