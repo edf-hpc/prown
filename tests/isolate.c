@@ -134,6 +134,7 @@ int init_namespace() {
         return 1;
     }
 
+    return 0;
 }
 
 int launch_tests() {
