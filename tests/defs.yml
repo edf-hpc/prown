@@ -105,6 +105,27 @@ tests:
       owning file /var/tmp/projects/lhc/data
     stderr: null
 
+  - name: Prown project directory
+    prepare: null
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stdout: |
+      Warning: directory 'lhc' not found! (ignored)
+    stderr: null
+
+  - name: Prown unexisting file
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+    user: mike
+    cmd: $BIN$ lhc/unexisting
+    exitcode: 0
+    stdout: |
+      Warning: directory 'lhc/unexisting' not found! (ignored)
+    stderr: null
+
   - name: User can prown multiple files
     prepare: |
       mkdir lhc
