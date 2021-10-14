@@ -180,7 +180,7 @@ tests:
       Setting owner of lhc  directory /var/tmp/projects/lhc to $UID$
     stderr: null
 
-  - name: Prown does not fail with symlink pointing to not accessible target
+  - name: Prown does not fail with symlink in subdirectory pointing to not accessible target
     prepare: |
       mkdir lhc
       chown root:physic lhc
@@ -201,4 +201,22 @@ tests:
     stdout: |
       group of user: physic
       Setting owner of lhc/source  directory /var/tmp/projects/lhc/source to $UID$
+    stderr: null
+
+  - name: Prown fails with direct symlink pointing to not accessible target
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        ln -s fail lhc/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/symlink
+    exitcode: 0
+    stat:
+      lhc/symlink:
+        owner: anna  # prown has not changed the source of the symlink
+    stdout: |
+      Warning: directory 'lhc/symlink' not found! (ignored)
     stderr: null
