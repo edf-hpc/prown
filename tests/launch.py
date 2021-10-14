@@ -83,9 +83,10 @@ class UsersDB(object):
 
 class TestDef(object):
 
-    def __init__(self, name, prepare, user, cmd, exitcode, stat, stdout, stderr):
+    def __init__(self, name, prepare, tree, user, cmd, exitcode, stat, stdout, stderr):
         self.name = name
         self.prepare = prepare
+        self.tree = tree
         self.user = user
         self.cmd = cmd
         self.exitcode = exitcode
@@ -155,6 +156,7 @@ def load_tests_defs():
             for xtest in tests_y:
                 tests.append(TestDef(xtest['name'],
                                      xtest['prepare'],
+                                     xtest.get('tree', False),
                                      xtest['user'],
                                      xtest['cmd'],
                                      xtest['exitcode'],
@@ -269,6 +271,10 @@ def run_tests(tests):
                 script_fh.write(test.prepare)
             subprocess.run(['/bin/sh', script_path], cwd=projects_dir)
 
+        if test.tree:
+            print("tree before:")
+            subprocess.run(['tree', '-u', '-p', '-A', '-C', '-l', projects_dir])
+
         pid = os.fork()
         if pid:
             status = os.wait()
@@ -276,6 +282,10 @@ def run_tests(tests):
         else:
             run_test(test)
             # child leaves the program in run_test()
+
+        if test.tree:
+            print("tree after:")
+            subprocess.run(['tree', '-u', '-p', '-A', '-C', '-l', projects_dir])
 
         # remove tests data in projects directory
         for path in glob.glob(os.path.join(projects_dir, '*')):
