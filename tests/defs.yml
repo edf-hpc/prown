@@ -112,7 +112,7 @@ tests:
       chmod 0770 lhc
       su anna -s /bin/sh -c "{
         touch lhc/data
-        chmod 0700 lhc/data
+        chmod 0400 lhc/data
       }"
     user: mike
     cmd: $BIN$ lhc
@@ -120,6 +120,7 @@ tests:
     stat:
       lhc/data:
         owner: mike  # mike did not had access to lhc/data but prown changed owner anyway
+        mode: 0o460  # prown set g+rw
     stdout: |
       group of user: physic
       Setting owner of lhc  directory /var/tmp/projects/lhc to $UID$
