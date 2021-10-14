@@ -105,6 +105,120 @@ tests:
       owning file /var/tmp/projects/lhc/data
     stderr: null
 
+  - name: User can prown multiple files
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data1
+        touch lhc/data2
+      }"
+    user: mike
+    cmd: $BIN$ lhc/data1 lhc/data2
+    exitcode: 0
+    stat:
+      lhc/data1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/data2:
+        owner: mike  # prown has changed from anna to mike
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/data1  directory /var/tmp/projects/lhc/data1 to $UID$
+      owning file /var/tmp/projects/lhc/data1
+      group of user: physic
+      Setting owner of lhc/data2  directory /var/tmp/projects/lhc/data2 to $UID$
+      owning file /var/tmp/projects/lhc/data2
+    stderr: null
+
+  - name: User can prown multiple directories
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ lhc/subdir1 lhc/subdir2
+    exitcode: 0
+    stat:
+      lhc/subdir1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir1/data:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2/data:
+        owner: mike  # prown has changed from anna to mike
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/subdir1  directory /var/tmp/projects/lhc/subdir1 to $UID$
+      group of user: physic
+      Setting owner of lhc/subdir2  directory /var/tmp/projects/lhc/subdir2 to $UID$
+    stderr: null
+
+  - name: User can prown glob files
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data1
+        touch lhc/data2
+      }"
+    user: mike
+    cmd: $BIN$ lhc/*
+    shell: true
+    exitcode: 0
+    stat:
+      lhc/data1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/data2:
+        owner: mike  # prown has changed from anna to mike
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/data1  directory /var/tmp/projects/lhc/data1 to $UID$
+      owning file /var/tmp/projects/lhc/data1
+      group of user: physic
+      Setting owner of lhc/data2  directory /var/tmp/projects/lhc/data2 to $UID$
+      owning file /var/tmp/projects/lhc/data2
+    stderr: null
+
+  - name: User can prown glob directories
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ lhc/*
+    shell: true
+    exitcode: 0
+    stat:
+      lhc/subdir1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir1/data:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2/data:
+        owner: mike  # prown has changed from anna to mike
+    stdout: |
+      group of user: physic
+      Setting owner of lhc/subdir1  directory /var/tmp/projects/lhc/subdir1 to $UID$
+      group of user: physic
+      Setting owner of lhc/subdir2  directory /var/tmp/projects/lhc/subdir2 to $UID$
+    stderr: null
+
   - name: Prown works even if user does not have access to file in a directory
     prepare: |
       mkdir lhc
