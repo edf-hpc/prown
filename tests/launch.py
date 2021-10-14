@@ -179,7 +179,7 @@ def check_stat(test):
         else:
             # if the path is not absolute, consider it is relative to projects directory
             abspath = os.path.join(projects_dir, path)
-        filestat = os.stat(abspath)
+        filestat = os.lstat(abspath)
         if 'owner' in perms:
             found = pwd.getpwuid(filestat.st_uid).pw_name
             if found != perms['owner']:
