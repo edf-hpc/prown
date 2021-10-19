@@ -1,8 +1,9 @@
+CFLAGS ?= -Wall
 prefix = /usr/local
 all:src/prown
 
 src/prown:src/prown.c
-	$(CC) -o $@ $^ -lbsd
+	$(CC) $(CFLAGS) -o $@ $^ -lbsd
 
 install: src/prown
 	install -D src/prown \
@@ -12,7 +13,7 @@ clean:
 	-rm -f src/prown tests/isolate
 
 tests/isolate: tests/isolate.c
-	$(CC) -Wall -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 
 tests: src/prown tests/isolate
 	tests/run.sh
