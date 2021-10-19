@@ -18,6 +18,24 @@ Prown is a simple tool developed to give users the possibility to own projects. 
 - User can't own the root directory of a project.
 - User can't own directories outside the list of projects in config file. 
 
+Code style
+----------
+
+Prown C code base follows styling rules controlled by this Makefile target:
+
+```
+make indent
+```
+
+When this command is run, Prown C source code is reformated to follow all
+styling rules defined by the project.
+
+This requires GNU indent to be installed on your system, eg. on Debian:
+
+```
+sudo apt install indent
+```
+
 Tests
 -----
 
