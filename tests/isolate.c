@@ -54,7 +54,7 @@ int init_namespace() {
      * Make / private to the namespace (ie. specific peer-group) to avoid
      * propagation of subsequents mounts on the system.
      */
-    if (mount("none", "/", NULL, MS_REC|MS_PRIVATE, NULL)) {
+    if (mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL)) {
         ERROR("error make / MS_PRIVATE: %s\n", strerror(errno));
         return 1;
     }
@@ -82,23 +82,25 @@ int init_namespace() {
     }
 
     /* mkdir 755 */
-    if (mkdir("/mnt/merged", S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) {
+    if (mkdir("/mnt/merged", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) {
         ERROR("unable to mkdir %s: %s\n", "/mnt/root", strerror(errno));
         return 1;
     }
 
-    if (mkdir("/mnt/root", S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) {
+    if (mkdir("/mnt/root", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) {
         ERROR("unable to mkdir %s: %s\n", "/mnt/root", strerror(errno));
         return 1;
     }
 
-    if (mkdir("/mnt/work", S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) {
+    if (mkdir("/mnt/work", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) {
         ERROR("unable to mkdir %s: %s\n", "/mnt/work", strerror(errno));
         return 1;
     }
 
     DEBUG("creating overlay\n");
-    if (mount("overlay", "/mnt/merged", "overlay", 0, "lowerdir=/,upperdir=/mnt/root,workdir=/mnt/work")) {
+    if (mount
+        ("overlay", "/mnt/merged", "overlay", 0,
+         "lowerdir=/,upperdir=/mnt/root,workdir=/mnt/work")) {
         ERROR("unable to mount overlayfs: %s\n", strerror(errno));
         return 1;
     }
@@ -145,7 +147,7 @@ int launch_tests() {
 
     /* Look for launch.py in the directory of the current binary */
 
-    if(readlink("/proc/self/exe", bin_path, PATH_MAX) == -1) {
+    if (readlink("/proc/self/exe", bin_path, PATH_MAX) == -1) {
         ERROR("unable to readlink(): %s\n", strerror(errno));
         return 1;
     }
@@ -160,13 +162,13 @@ int launch_tests() {
 
 }
 
-int main(int argc, char * argv[]) {
+int main(int argc, char *argv[]) {
 
     if (init_namespace())
-      return EXIT_FAILURE;
+        return EXIT_FAILURE;
 
     if (launch_tests())
-      return EXIT_FAILURE;
+        return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
 }
