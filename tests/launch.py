@@ -268,23 +268,21 @@ def run_test(test):
     if run.returncode != test.exitcode:
          errors.append("exit code %d is different from expected exit code %d\n" % (run.returncode, test.exitcode))
 
-    msg = check_stat(test)
-    if msg:
-         errors.append("expected stats are not conform:\n %s" % (msg))
     msg = cmp_output('stdout', run.stdout.decode('utf-8'), test.stdout)
     if msg:
-         errors.append("stdout is not conform:\n %s" % (msg))
+         errors.append("stdout is not conform:\n%s" % (msg))
     msg = cmp_output('stderr', run.stderr.decode('utf-8'), test.stderr)
     if msg:
-         errors.append("stderr is not conform:\n %s" % (msg))
+         errors.append("stderr is not conform:\n%s" % (msg))
 
     if len(errors):
        warn(u"❌test « %s » failed, errors:" % (test.name))
        for error in errors:
            warn(textwrap.indent(error, '  + ', lambda line: True))
        status = 1
-    else:
-       success(u"✓ test « %s » succeeded" % (test.name))
+
+    # at this point, we cannot tell if the test is successful as the parent
+    # with root permissions must check stats.
 
     # terminate child process
     sys.exit(status)
@@ -312,6 +310,17 @@ def run_tests(tests):
         else:
             run_test(test)
             # child leaves the program in run_test()
+
+        # now check stats as root
+        msg = check_stat(test)
+        if not nb_errors:
+           if msg:
+               warn(u"❌test « %s » failed, errors:" % (test.name))
+               nb_errors+=1
+           else:
+               success(u"✓ test « %s » succeeded" % (test.name))
+        if msg:
+           warn(textwrap.indent("expected stats are not conform:\n%s" % (msg), '  + '))
 
         if test.tree:
             print("tree after:")
