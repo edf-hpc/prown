@@ -303,7 +303,7 @@ def run_tests(tests):
 
         if test.tree:
             print("tree before:")
-            subprocess.run(['tree', '-u', '-p', '-A', '-C', '-l', projects_dir])
+            subprocess.run(['tree', '-u', '-p', '-A', '-C', '-l', '-g', projects_dir])
 
         pid = os.fork()
         if pid:
@@ -315,7 +315,7 @@ def run_tests(tests):
 
         if test.tree:
             print("tree after:")
-            subprocess.run(['tree', '-u', '-p', '-A', '-C', '-l', projects_dir])
+            subprocess.run(['tree', '-u', '-p', '-A', '-C', '-l', '-g', projects_dir])
 
         # remove tests data in projects directory
         for path in glob.glob(os.path.join(projects_dir, '*')):
