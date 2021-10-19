@@ -49,9 +49,10 @@ class bcolors:
 
 class User(object):
 
-    def __init__(self, name, uid):
+    def __init__(self, name, uid, primary_group):
         self.name = name
         self.uid = uid
+        self.primary_group = primary_group
 
 class UsersGroup(object):
 
@@ -60,26 +61,43 @@ class UsersGroup(object):
         self.gid = gid
         self.users = []
 
-    def add_user(self, name, uid):
-        self.users.append(User(name,uid))
-
 class UsersDB(object):
 
     def __init__(self, first_uid, first_gid):
         self.next_uid = first_uid
         self.next_gid = first_gid
         self.groups = []
+        self.users = []
 
-    def add_group(self, group, users):
+    def add_user(self, user, primary_group):
 
-        print("new group %s [%d]" % (group, self.next_gid))
-        new_group = UsersGroup(group, self.next_gid)
-        self.next_gid+=1
+        group = self.add_group(primary_group, [])
+        print("new user %s in group %s [%d]" % (user, group.name, self.next_uid))
+        self.users.append(User(user, self.next_uid, group))
+        self.next_uid+=1
+
+    def add_group(self, group_name, users):
+
+        group = None
+        for xgroup in self.groups:
+            if xgroup.name == group_name:
+                print("group %s [%d] already exist" % (group_name, xgroup.gid))
+                group = xgroup
+                break
+
+        if group is None:
+            print("new group %s [%d]" % (group_name, self.next_gid))
+            group = UsersGroup(group_name, self.next_gid)
+            self.next_gid+=1
+            self.groups.append(group)
+
         for user in users:
-            print("new user %s in group %s [%d]" % (user, group, self.next_uid))
-            new_group.add_user(user, self.next_uid)
-            self.next_uid+=1
-        self.groups.append(new_group)
+            for xuser in self.users:
+                if xuser.name == user:
+                    print("adding user %s in group %s" % (user, group_name))
+                    group.users.append(xuser)
+
+        return group
 
 class TestDef(object):
 
@@ -116,10 +134,12 @@ def init_test_env(usersdb):
         with open('/etc/shadow', 'a') as shadow_fh:
             with open('/etc/group', 'a') as group_fh:
                 for group in usersdb.groups:
-                    line = "%s:x:%u:%s\n" % (group.name, group.gid, ','.join([ user.name for user in group.users ]));
+                    line = "%s:x:%u:%s\n" % (group.name, group.gid, ','.join([ user.name for user in group.users if group.name != user.primary_group.name ]))
+                    print("group line: %s" % (line), end='')
                     group_fh.write(line)
                     for user in group.users:
-                         line = "%s:x:%u:%u::/tmp:/bin/false\n" % (user.name, user.uid, group.gid)
+                         line = "%s:x:%u:%u::/tmp:/bin/false\n" % (user.name, user.uid, user.primary_group.gid)
+                         print("passwd line: %s" % (line), end='')
                          passwd_fh.write(line)
                          line = "%s::::::::\n" % (user.name)
                          shadow_fh.write(line)
@@ -139,6 +159,9 @@ def load_userdb():
             usersdb_y = yaml.safe_load(stream)['usersdb']
             usersdb = UsersDB(usersdb_y['first_uid'], usersdb_y['first_gid'])
 
+            for user_group in usersdb_y['users']:
+                (user, group) = user_group.split(':')
+                usersdb.add_user(user, group)
             for group, users in usersdb_y['groups'].items():
                 usersdb.add_group(group, users)
 
@@ -229,6 +252,8 @@ def run_test(test):
     uid = pwd.getpwnam(test.user).pw_uid
     gid = pwd.getpwnam(test.user).pw_gid
 
+    # set supplementary groups, just like after user login
+    os.setgroups(os.getgrouplist(test.user, gid))
     os.setgid(gid)
     os.setuid(uid)
 

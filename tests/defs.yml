@@ -1,13 +1,21 @@
 usersdb:
   first_uid: 100001
   first_gid: 100001
+  users:
+    - mike:research
+    - anna:engineering
+    - marie:research
+    - john:engineering
+    - ted:engineering
   groups:
     physic:
       - mike
       - anna
+      - ted
     biology:
       - marie
       - john
+      - ted
 
 tests:
 
