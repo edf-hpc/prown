@@ -54,6 +54,28 @@ tests:
              you are not in 'physic' group 
     stderr: null
 
+  - name: User not in owner group cannot prown project directory even when she has access to file
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0777 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data
+      }"
+    user: john   # anna and john share the same engineering primary group, and
+                 # lhc project directory is 0777, then john has full access to
+                 # lhc/data.
+    cmd: $BIN$ lhc/data
+    exitcode: 0
+    stat:
+      lhc/data:
+        owner: anna
+        group: engineering
+    stdout: |
+      Error: permission denied for project 
+             you are not in 'physic' group 
+    stderr: null
+
   - name: User can prown project but it does not change ownership of project root
     prepare: |
       mkdir lhc
