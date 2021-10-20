@@ -211,7 +211,7 @@ int prownProject(char *path) {
     int validargs = 0;
     char *projectsroot[PATH_MAX];
     char real_dir[PATH_MAX];
-    char group[PATH_MAX], linux_group[PATH_MAX];
+    char linux_group[PATH_MAX];
     struct stat sb;
     struct group *g;
 
@@ -227,7 +227,7 @@ int prownProject(char *path) {
             //if file in list of projects but not equal the project
             if ((strncmp(real_dir, projectsroot[i], l) == 0)
                 && (strcmp(real_dir, projectsroot[i]))) {
-                char projectroot[PATH_MAX];
+                char projectroot[PATH_MAX], group[PATH_MAX];
 
                 strlcpy(projectroot, projectsroot[i], sizeof(projectroot));
                 isInProjectPath = 1;
