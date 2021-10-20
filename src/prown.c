@@ -32,6 +32,7 @@
 #include <getopt.h>
 #include <grp.h>
 #include <errno.h>
+#include <stdbool.h>
 
 
 #define MAXLINE  1000
@@ -130,6 +131,100 @@ int is_user_in_group(char group[]) {
     return 1;
 }
 
+/*
+ * Returns true if path is under one of the given projects_roots. If true,
+ * projects_root string is set with the matching projects_roots.
+ *
+ * The projects_root argument must be a preallocated string.
+ *
+ * Examples:
+ *
+ *   With:
+ *
+ *     projects_roots = { '/projects', '/data' }
+ *     path = '/projects/awesome/data'
+ *
+ *     → is_in_projects_roots() returs true and set projects_root to '/projects'.
+ *
+ *   With:
+ *
+ *     projects_roots = { '/projects', '/data' }
+ *     path = '/tmp/file'
+ *
+ *     → is_in_projects_roots() returns false (projects_root is not modified).
+ */
+
+bool is_in_projects_roots(char **projects_roots, char *projects_root,
+                          const char *path) {
+
+    for (int i = 0; i < nop; i++) {
+        int l = strlen(projects_roots[i]);
+
+        //if file in list of projects but not equal the project
+        if ((strncmp(path, projects_roots[i], l) == 0)
+            && (strcmp(path, projects_roots[i]))) {
+            strncpy(projects_root, projects_roots[i], PATH_MAX);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+ * Set project_basedir and linux_group with respectively the name of the
+ * of the base project directory and the name of the group of this directory.
+ *
+ * Example:
+ *
+ *    With:
+ *
+ *      projets_root = '/projects'
+ *      path = '/projects/awesome/path/to/file'
+ *      /projects/awesome directory belonging to root:physic
+ *
+ *      → project_admin_group() set
+ *        - project_basedir to '/projects/awesome'
+ *        - linux_group to 'physic'
+ */
+
+void project_admin_group(char *projects_root, char *project_basedir,
+                         char *path, char *linux_group) {
+
+    struct group *g;
+    struct stat sb;
+
+    // get the path of project
+    int l = strlen(projects_root);
+    int h = l + 1;
+
+    /* clean allocated memory for strings */
+    memset(project_basedir, 0, PATH_MAX);
+
+    while (path[h] != '\0' && path[h] != '/') {
+        h++;
+    }
+    strcpy(project_basedir, projects_root);
+    /* concat with the basename of project directory */
+    strncat(project_basedir, &path[l], h - l);
+
+    if (verbose == 1) {
+        printf("Project path: %s\n", project_basedir);
+    }
+    if (stat(project_basedir, &sb) == -1) {
+        perror("stat");
+        exit(EXIT_FAILURE);
+    }
+    if (verbose == 1) {
+        printf("Ownership: GID=%ld\n", (long) sb.st_gid);
+    }
+    g = getgrgid((long) sb.st_gid);
+    strcpy(linux_group, g->gr_name);
+    if (verbose == 1) {
+        printf("%s\n", linux_group);
+    }
+}
+
 /**********************************************************
  *                                                        *
  *             Workflow processing functions              *
@@ -205,15 +300,14 @@ int prownProject(char *path) {
     int validargs = 0;
     char *projectsroot[PATH_MAX];
     char real_dir[PATH_MAX];
-    struct stat sb;
 
     /* clean allocated memory for strings */
     memset(real_dir, 0, PATH_MAX);
-
     read_config_file("/etc/prown.conf", projectsroot);
+
     // if the real path is correct
     if (realpath(path, real_dir)) {
-        int isInProjectPath = 0, l;
+        bool isInProjectPath;
         char projectroot[PATH_MAX], projectdir[PATH_MAX],
             linux_group[PATH_MAX];
 
@@ -223,50 +317,13 @@ int prownProject(char *path) {
         memset(linux_group, 0, PATH_MAX);
 
         /* check path is under projects roots directories */
-        for (int i = 0; i < nop; i++) {
-            l = strlen(projectsroot[i]);
-
-            //if file in list of projects but not equal the project
-            if ((strncmp(real_dir, projectsroot[i], l) == 0)
-                && (strcmp(real_dir, projectsroot[i]))) {
-
-                /* clean allocated memory for strings */
-                strlcpy(projectroot, projectsroot[i], sizeof(projectroot));
-                isInProjectPath = 1;
-                break;
-            }
-        }
-
+        isInProjectPath =
+            is_in_projects_roots(projectsroot, projectroot, real_dir);
         /* get group owner of project base directory */
-        if (isInProjectPath) {
-            struct group *g;
+        if (isInProjectPath)
+            project_admin_group(projectroot, projectdir, real_dir,
+                                linux_group);
 
-            // get the path of project
-            int h = l + 1;
-
-            while (real_dir[h] != '\0' && real_dir[h] != '/') {
-                h++;
-            }
-            strcpy(projectdir, projectroot);
-            /* concat with the basename of projet directory */
-            strncat(projectdir, &real_dir[l], h - l);
-
-            if (verbose == 1) {
-                printf("Project path: %s\n", projectdir);
-            }
-            if (stat(projectdir, &sb) == -1) {
-                perror("stat");
-                exit(EXIT_FAILURE);
-            }
-            if (verbose == 1) {
-                printf("Ownership: GID=%ld\n", (long) sb.st_gid);
-            }
-            g = getgrgid((long) sb.st_gid);
-            strcpy(linux_group, g->gr_name);
-            if (verbose == 1) {
-                printf("%s\n", linux_group);
-            }
-        }
         // if the user hasn't access to the project
         if (is_user_in_group(linux_group) == 1 && isInProjectPath == 1) {
             printf("Error: permission denied for project \n");
