@@ -212,7 +212,6 @@ int prownProject(char *path) {
     char *projectsroot[PATH_MAX];
     char real_dir[PATH_MAX];
     struct stat sb;
-    struct group *g;
 
     read_config_file("/etc/prown.conf", projectsroot);
     // if the real path is correct
@@ -227,6 +226,7 @@ int prownProject(char *path) {
             if ((strncmp(real_dir, projectsroot[i], l) == 0)
                 && (strcmp(real_dir, projectsroot[i]))) {
                 char projectroot[PATH_MAX], group[PATH_MAX];
+                struct group *g;
 
                 strlcpy(projectroot, projectsroot[i], sizeof(projectroot));
                 isInProjectPath = 1;
