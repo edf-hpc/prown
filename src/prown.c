@@ -297,7 +297,6 @@ int projectOwner(char *basepath) {
 
 int prownProject(char *path) {
     uid_t uid = getuid();
-    int validargs = 0;
     char *projectsroot[PATH_MAX];
     char real_dir[PATH_MAX];
 
@@ -349,7 +348,6 @@ int prownProject(char *path) {
                         setOwner(real_dir);
                     projectOwner(real_dir);
                 }
-                validargs = 1;
             }
         }
         //The else case is  when the passed project is not in projects path
@@ -362,7 +360,7 @@ int prownProject(char *path) {
         printf("Warning: directory '%s' not found! (ignored)\n", path);
     }
 
-    return validargs;
+    return 0;
 }
 
 /**********************************************************
