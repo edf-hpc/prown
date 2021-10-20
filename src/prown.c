@@ -28,7 +28,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <pwd.h>
-#include "error.h"
+#include <error.h>
 #include <getopt.h>
 #include <grp.h>
 #include <errno.h>
