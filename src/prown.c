@@ -232,12 +232,11 @@ int prownProject(char *path) {
             //if file in list of projects but not equal the project
             if ((strncmp(real_dir, projectsroot[i], l) == 0)
                 && (strcmp(real_dir, projectsroot[i]))) {
-                char projectroot[PATH_MAX], group[PATH_MAX];
+                char projectroot[PATH_MAX];
                 struct group *g;
 
                 /* clean allocated memory for strings */
                 memset(projectroot, 0, PATH_MAX);
-                memset(group, 0, PATH_MAX);
 
                 strlcpy(projectroot, projectsroot[i], sizeof(projectroot));
                 isInProjectPath = 1;
@@ -247,9 +246,10 @@ int prownProject(char *path) {
                 while (real_dir[h] != '\0' && real_dir[h] != '/') {
                     h++;
                 }
-                memcpy(group, &real_dir[l], h - l);
                 strcpy(projectdir, projectroot);
-                strcat(projectdir, group);
+                /* concat with the basename of projet directory */
+                strncat(projectdir, &real_dir[l], h - l);
+
                 if (verbose == 1) {
                     printf("Project path: %s\n", projectdir);
                 }
