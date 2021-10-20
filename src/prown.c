@@ -299,65 +299,60 @@ int prownProject(char *path) {
     uid_t uid = getuid();
     char *projectsroot[PATH_MAX];
     char real_dir[PATH_MAX];
+    bool isInProjectPath;
+    char projectroot[PATH_MAX], projectdir[PATH_MAX], linux_group[PATH_MAX];
+    struct stat path_stat;
+
 
     /* clean allocated memory for strings */
     memset(real_dir, 0, PATH_MAX);
+    memset(projectroot, 0, PATH_MAX);
+    memset(projectdir, 0, PATH_MAX);
+    memset(linux_group, 0, PATH_MAX);
+
     read_config_file("/etc/prown.conf", projectsroot);
 
-    // if the real path is correct
-    if (realpath(path, real_dir)) {
-        bool isInProjectPath;
-        char projectroot[PATH_MAX], projectdir[PATH_MAX],
-            linux_group[PATH_MAX];
-
-        /* clean allocated memory for strings */
-        memset(projectroot, 0, PATH_MAX);
-        memset(projectdir, 0, PATH_MAX);
-        memset(linux_group, 0, PATH_MAX);
-
-        /* check path is under projects roots directories */
-        isInProjectPath =
-            is_in_projects_roots(projectsroot, projectroot, real_dir);
-
-        if (isInProjectPath) {
-
-            /* get group owner of project base directory */
-            project_admin_group(projectroot, projectdir, real_dir,
-                                linux_group);
-
-            // if the user hasn't access to the project
-            if (is_user_in_group(linux_group) == 1) {
-                printf("Error: permission denied for project \n");
-                printf("       you are not in '%s' group \n", linux_group);
-            } else {
-                struct stat path_stat;
-
-                printf("Setting owner of %s  directory %s to %u\n", path,
-                       real_dir, uid);
-
-                stat(real_dir, &path_stat);
-                //if it's a file we should call setOwner one time
-                if (path_stat.st_mode & S_IFREG) {
-                    printf("owning file %s\n", real_dir);
-                    setOwner(real_dir);
-                } else {
-                    // chown the real_dir if it's not the projectDir
-                    // because projectOwner() doesn't chown the entry path
-                    // but only the chlids
-                    if (strcmp(real_dir, projectdir))
-                        setOwner(real_dir);
-                    projectOwner(real_dir);
-                }
-            }
-        }
-        //The else case is  when the passed project is not in projects path
-        else {
-            printf
-                ("You can't take rights everywhere. Directory '%s' will be ignored\n",
-                 path);
-        }
-    } else {
+    // check the real path is correct
+    if (!realpath(path, real_dir)) {
         printf("Warning: directory '%s' not found! (ignored)\n", path);
+        return 0;
+    }
+
+    /* check path is under projects roots directories */
+    isInProjectPath =
+        is_in_projects_roots(projectsroot, projectroot, real_dir);
+
+    if (!isInProjectPath) {
+        printf
+            ("You can't take rights everywhere. Directory '%s' will be ignored\n",
+             path);
+        return 0;
+    }
+
+    /* get group owner of project base directory */
+    project_admin_group(projectroot, projectdir, real_dir, linux_group);
+
+    // if the user hasn't access to the project
+    if (is_user_in_group(linux_group) == 1) {
+        printf("Error: permission denied for project \n");
+        printf("       you are not in '%s' group \n", linux_group);
+        return 0;
+    }
+
+    printf("Setting owner of %s  directory %s to %u\n", path, real_dir, uid);
+
+    stat(real_dir, &path_stat);
+    //if it's a file we should call setOwner one time
+    if (path_stat.st_mode & S_IFREG) {
+        printf("owning file %s\n", real_dir);
+        setOwner(real_dir);
+    } else {
+        // chown the real_dir if it's not the projectDir
+        // because projectOwner() doesn't chown the entry path
+        // but only the chlids
+        if (strcmp(real_dir, projectdir))
+            setOwner(real_dir);
+        projectOwner(real_dir);
     }
 
     return 0;
