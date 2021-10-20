@@ -1,25 +1,23 @@
-Prown, a tool to manage project owners and permissions
-======================================================
+# Prown, a tool to manage project owners and permissions
 
-Name
-----
+## Name
 
 prown - Change project owner 
 
-Synopsys
---------
+## Synopsys
+
     prown DIRECTORY(s)
 
-Description
------------
+## Description
 
 Prown is a simple tool developed to give users the possibility to own projects. It uses the configuration file in /etc/prown.conf to specify the projects directories. When a user specify one or multiple directories, Prown verify the user permissions and changes recursively the owner of the directory to that user. 
 - User must be in the group owner of the directory or the file with Write access to become owner.
 - User can't own the root directory of a project.
 - User can't own directories outside the list of projects in config file. 
 
-Code style
-----------
+## Code maintainance
+
+### Code style
 
 Prown C code base follows styling rules controlled by this Makefile target:
 
@@ -36,10 +34,26 @@ This requires GNU indent to be installed on your system, eg. on Debian:
 sudo apt install indent
 ```
 
-Tests
------
+## Static checks
 
-To run tests, just run this command:
+To realize static code analysis over Prown source code, run this command:
+
+```
+make check
+```
+
+This runs `cppcheck` utility over Prown source code and reports all bugs and
+errors found.
+
+This requires `cppcheck` to be installed on your system, eg. on Debian:
+
+```
+sudo apt install cppcheck
+```
+
+### Functionnal tests
+
+To run functionnal tests, just run this command:
 
 ```
 make tests

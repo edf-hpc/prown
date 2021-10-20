@@ -11,8 +11,12 @@ INDENT_FLAGS = --no-tabs \
                --no-space-after-function-call-names \
                --braces-on-func-def-line \
                --blank-lines-after-declarations
+CHECK = cppcheck
+CHECKFLAGS ?= -I /usr/include -I /usr/include/linux --enable=all --language=c
 prefix = /usr/local
 all:src/prown
+
+
 
 src/prown: $(PROWN_SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lbsd
@@ -28,6 +32,9 @@ indent:
 	indent $(INDENT_FLAGS) $(SRC)
 	sed -i 's/ *$$//;' $(SRC)  # remove trailing whitespaces
 
+check:
+	$(CHECK) $(CHECKFLAGS) $(PROWN_SRC)
+
 tests/isolate: $(TESTS_SRC)
 	$(CC) $(CFLAGS) -o $@ $^
 
@@ -39,4 +46,4 @@ distclean: clean
 uninstall:
 	-rm -f $(DESTDIR)$(prefix)/bin/prown
 
-.PHONY: all install clean distclean indent uninstall tests
+.PHONY: all install clean distclean indent check uninstall tests
