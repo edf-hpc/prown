@@ -42,6 +42,100 @@ static int verbose;
 /* number of project paths in config file */
 static int nop = 0;
 
+/**********************************************************
+ *                                                        *
+ *                  Configuration load                    *
+ *                                                        *
+ **********************************************************/
+
+/*
+ * Read lines from config file.
+ * */
+void read_str_from_config_line(char *config_line, char *val) {
+    char prm_name[MAXLINE];
+
+    sscanf(config_line, "%s %s\n", prm_name, val);
+}
+
+/*
+ * Read config file. projectsdir is the lis of projects
+ * */
+void read_config_file(char config_filename[], char *projectsdir[]) {
+    FILE *fp;
+    char buf[MAXLINE];
+
+    if ((fp = fopen(config_filename, "r")) == NULL) {
+        fprintf(stderr, "Failed to open config file %s \n", config_filename);
+        exit(EXIT_FAILURE);
+    }
+    while (!feof(fp)) {
+        fgets(buf, MAXLINE, fp);
+        if (buf[0] == '#' || strlen(buf) < 4) {
+            continue;
+        }
+        if (strstr(buf, "PROJECT_DIR ")) {
+            if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
+                printf("Unable to allocate memory \n");
+                exit(1);
+            }
+            read_str_from_config_line(buf, projectsdir[nop]);
+            nop++;
+        }
+    }
+    fclose(fp);
+}
+
+/**********************************************************
+ *                                                        *
+ *                      Helpers                           *
+ *                                                        *
+ **********************************************************/
+
+/*
+ * Check if user is in group
+ * Returns 0 if valid, 1 otherwise.
+ */
+int is_user_in_group(char group[]) {
+    __uid_t uid = getuid();
+    struct passwd *pw = getpwuid(uid);
+
+    if (pw == NULL) {
+        perror("getpwuid error: ");
+    }
+
+    int ngroups = 0;
+
+    //this call is just to get the correct ngroups
+    getgrouplist(pw->pw_name, pw->pw_gid, NULL, &ngroups);
+    __gid_t groups[ngroups];
+
+    //here we actually get the groups
+    getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups);
+
+
+    //example to print the groups name
+    int i;
+
+    for (i = 0; i < ngroups; i++) {
+        struct group *gr = getgrgid(groups[i]);
+
+        if (gr == NULL) {
+            perror("getgrgid error: ");
+        }
+        if (strcmp(group, gr->gr_name) == 0) {
+            printf("group of user: %s\n", gr->gr_name);
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**********************************************************
+ *                                                        *
+ *             Workflow processing functions              *
+ *                                                        *
+ **********************************************************/
+
 /*set user as the owner of the current file or directory*/
 void setOwner(const char *path) {
     //use lchown to change owner for symlinks
@@ -104,106 +198,6 @@ int projectOwner(char *basepath) {
         closedir(dir);
     }
     return status;
-}
-
-/*
- * Read lines from config file.
- * */
-void read_str_from_config_line(char *config_line, char *val) {
-    char prm_name[MAXLINE];
-
-    sscanf(config_line, "%s %s\n", prm_name, val);
-}
-
-/*
- * Read config file. projectsdir is the lis of projects
- * */
-void read_config_file(char config_filename[], char *projectsdir[]) {
-    FILE *fp;
-    char buf[MAXLINE];
-
-    if ((fp = fopen(config_filename, "r")) == NULL) {
-        fprintf(stderr, "Failed to open config file %s \n", config_filename);
-        exit(EXIT_FAILURE);
-    }
-    while (!feof(fp)) {
-        fgets(buf, MAXLINE, fp);
-        if (buf[0] == '#' || strlen(buf) < 4) {
-            continue;
-        }
-        if (strstr(buf, "PROJECT_DIR ")) {
-            if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
-                printf("Unable to allocate memory \n");
-                exit(1);
-            }
-            read_str_from_config_line(buf, projectsdir[nop]);
-            nop++;
-        }
-    }
-    fclose(fp);
-}
-
-/*
- * Check if user is in group
- * Returns 0 if valid, 1 otherwise.
- */
-int is_user_in_group(char group[]) {
-    __uid_t uid = getuid();
-    struct passwd *pw = getpwuid(uid);
-
-    if (pw == NULL) {
-        perror("getpwuid error: ");
-    }
-
-    int ngroups = 0;
-
-    //this call is just to get the correct ngroups
-    getgrouplist(pw->pw_name, pw->pw_gid, NULL, &ngroups);
-    __gid_t groups[ngroups];
-
-    //here we actually get the groups
-    getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups);
-
-
-    //example to print the groups name
-    int i;
-
-    for (i = 0; i < ngroups; i++) {
-        struct group *gr = getgrgid(groups[i]);
-
-        if (gr == NULL) {
-            perror("getgrgid error: ");
-        }
-        if (strcmp(group, gr->gr_name) == 0) {
-            printf("group of user: %s\n", gr->gr_name);
-            return 0;
-        }
-    }
-    return 1;
-}
-
-void usage(int status) {
-    if (status != EXIT_SUCCESS)
-        printf("Saisissez « prown --help » pour plus d'informations.\n");
-    else {
-        printf("Utilisation: prown[OPTION]... FICHIER...\n");
-        printf
-            ("Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE en PROPRIO actuel.\n");
-        printf
-            ("\n-v, --verbose          afficher en détail les fichiers modifiés\n");
-        printf("-h, --help             afficher l'aide et quitter\n");
-        printf
-            ("\nL'utilisateur doit avoir le droit d'écriture sur le fichier ou le dossier\n");
-        printf("qu'il souhaite posséder.\n");
-        printf("\nExemples :\n");
-        printf
-            ("  prown ccnhpc           devenir propriétaire sur le projet ccnhpc\n");
-        printf
-            ("  prown ccnhpc saturne   devenir propriétaire sur le projet ccnhpc et saturne\n");
-        printf
-            ("  prown ccnhpc/file      devenir propriétaire sur le fichier ccnhpc/file \n");
-
-    }
 }
 
 int prownProject(char *path) {
@@ -306,6 +300,36 @@ int prownProject(char *path) {
     }
 
     return validargs;
+}
+
+/**********************************************************
+ *                                                        *
+ *                        CLI                             *
+ *                                                        *
+ **********************************************************/
+
+void usage(int status) {
+    if (status != EXIT_SUCCESS)
+        printf("Saisissez « prown --help » pour plus d'informations.\n");
+    else {
+        printf("Utilisation: prown[OPTION]... FICHIER...\n");
+        printf
+            ("Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE en PROPRIO actuel.\n");
+        printf
+            ("\n-v, --verbose          afficher en détail les fichiers modifiés\n");
+        printf("-h, --help             afficher l'aide et quitter\n");
+        printf
+            ("\nL'utilisateur doit avoir le droit d'écriture sur le fichier ou le dossier\n");
+        printf("qu'il souhaite posséder.\n");
+        printf("\nExemples :\n");
+        printf
+            ("  prown ccnhpc           devenir propriétaire sur le projet ccnhpc\n");
+        printf
+            ("  prown ccnhpc saturne   devenir propriétaire sur le projet ccnhpc et saturne\n");
+        printf
+            ("  prown ccnhpc/file      devenir propriétaire sur le fichier ccnhpc/file \n");
+
+    }
 }
 
 int main(int argc, char **argv) {
