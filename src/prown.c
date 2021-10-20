@@ -77,7 +77,6 @@ int projectOwner(char *basepath) {
 
     lstat(basepath, &buf);
     int status = 0;
-    int errnum;
 
     if (S_ISDIR(buf.st_mode)) {
         char path[PATH_MAX];
@@ -86,9 +85,8 @@ int projectOwner(char *basepath) {
 
         // Unable to open directory stream
         if (!dir) {
-            errnum = errno;
             fprintf(stderr, "Failed to open directory '%s': %s (%d)\n",
-                    basepath, strerror(errnum), errnum);
+                    basepath, strerror(errno), errno);
             return 1;
         }
         while ((dp = readdir(dir)) != NULL) {
