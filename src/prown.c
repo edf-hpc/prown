@@ -319,37 +319,38 @@ int prownProject(char *path) {
         /* check path is under projects roots directories */
         isInProjectPath =
             is_in_projects_roots(projectsroot, projectroot, real_dir);
-        /* get group owner of project base directory */
-        if (isInProjectPath)
+
+        if (isInProjectPath) {
+
+            /* get group owner of project base directory */
             project_admin_group(projectroot, projectdir, real_dir,
                                 linux_group);
 
-        // if the user hasn't access to the project
-        if (is_user_in_group(linux_group) == 1 && isInProjectPath == 1) {
-            printf("Error: permission denied for project \n");
-            printf("       you are not in '%s' group \n", linux_group);
-        }
-        // if the user passed path is in the ptoject path
-        else if (isInProjectPath == 1) {
-            struct stat path_stat;
-
-            printf("Setting owner of %s  directory %s to %u\n", path,
-                   real_dir, uid);
-
-            stat(real_dir, &path_stat);
-            //if it's a file we should call setOwner one time
-            if (path_stat.st_mode & S_IFREG) {
-                printf("owning file %s\n", real_dir);
-                setOwner(real_dir);
+            // if the user hasn't access to the project
+            if (is_user_in_group(linux_group) == 1) {
+                printf("Error: permission denied for project \n");
+                printf("       you are not in '%s' group \n", linux_group);
             } else {
-                //chown the projectPath if it's not the projectDir
-                // because projectOwner() doesn't chown the entry path
-                // but only the chlids
-                if (strcmp(real_dir, projectdir))
+                struct stat path_stat;
+
+                printf("Setting owner of %s  directory %s to %u\n", path,
+                       real_dir, uid);
+
+                stat(real_dir, &path_stat);
+                //if it's a file we should call setOwner one time
+                if (path_stat.st_mode & S_IFREG) {
+                    printf("owning file %s\n", real_dir);
                     setOwner(real_dir);
-                projectOwner(real_dir);
+                } else {
+                    // chown the real_dir if it's not the projectDir
+                    // because projectOwner() doesn't chown the entry path
+                    // but only the chlids
+                    if (strcmp(real_dir, projectdir))
+                        setOwner(real_dir);
+                    projectOwner(real_dir);
+                }
+                validargs = 1;
             }
-            validargs = 1;
         }
         //The else case is  when the passed project is not in projects path
         else {
