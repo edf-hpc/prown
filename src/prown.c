@@ -275,27 +275,23 @@ int prownProject(char *path) {
         }
         // if the user passed path is in the ptoject path
         else if (isInProjectPath == 1) {
-            char projectPath[PATH_MAX]; /* List of project paths */
             struct stat path_stat;
 
             printf("Setting owner of %s  directory %s to %u\n", path,
                    real_dir, uid);
-            if (strlcpy(projectPath, real_dir, sizeof(projectPath)) >=
-                sizeof(projectPath))
-                exit(1);
 
-            stat(projectPath, &path_stat);
+            stat(real_dir, &path_stat);
             //if it's a file we should call setOwner one time
             if (path_stat.st_mode & S_IFREG) {
-                printf("owning file %s\n", projectPath);
-                setOwner(projectPath);
+                printf("owning file %s\n", real_dir);
+                setOwner(real_dir);
             } else {
                 //chown the projectPath if it's not the projectDir
                 // because projectOwner() doesn't chown the entry path
                 // but only the chlids
-                if (strcmp(projectPath, projectdir))
-                    setOwner(projectPath);
-                projectOwner(projectPath);
+                if (strcmp(real_dir, projectdir))
+                    setOwner(real_dir);
+                projectOwner(real_dir);
             }
             validargs = 1;
         }
