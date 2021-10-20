@@ -213,11 +213,18 @@ int prownProject(char *path) {
     char real_dir[PATH_MAX];
     struct stat sb;
 
+    /* clean allocated memory for strings */
+    memset(real_dir, 0, PATH_MAX);
+
     read_config_file("/etc/prown.conf", projectsroot);
     // if the real path is correct
     if (realpath(path, real_dir)) {
         int isInProjectPath = 0;
         char projectdir[PATH_MAX], linux_group[PATH_MAX];
+
+        /* clean allocated memory for strings */
+        memset(projectdir, 0, PATH_MAX);
+        memset(linux_group, 0, PATH_MAX);
 
         for (int i = 0; i < nop; i++) {
             int l = strlen(projectsroot[i]);
@@ -227,6 +234,10 @@ int prownProject(char *path) {
                 && (strcmp(real_dir, projectsroot[i]))) {
                 char projectroot[PATH_MAX], group[PATH_MAX];
                 struct group *g;
+
+                /* clean allocated memory for strings */
+                memset(projectroot, 0, PATH_MAX);
+                memset(group, 0, PATH_MAX);
 
                 strlcpy(projectroot, projectsroot[i], sizeof(projectroot));
                 isInProjectPath = 1;
