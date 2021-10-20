@@ -208,7 +208,6 @@ void usage(int status) {
 
 int prownProject(char *path) {
     uid_t uid = getuid();
-    char projectPath[PATH_MAX]; /* List of project paths */
     int validargs = 0, i;
     char *projectsroot[PATH_MAX];
     char real_dir[PATH_MAX], projectroot[PATH_MAX], projectdir[PATH_MAX];
@@ -263,12 +262,14 @@ int prownProject(char *path) {
         }
         // if the user passed path is in the ptoject path
         else if (isInProjectPath == 1) {
-            printf("Setting owner of %s  directory %s to %d\n", path,
+            char projectPath[PATH_MAX]; /* List of project paths */
+            struct stat path_stat;
+
+            printf("Setting owner of %s  directory %s to %u\n", path,
                    real_dir, uid);
             if (strlcpy(projectPath, real_dir, sizeof(projectPath)) >=
                 sizeof(projectPath))
                 exit(1);
-            struct stat path_stat;
 
             stat(projectPath, &path_stat);
             //if it's a file we should call setOwner one time
