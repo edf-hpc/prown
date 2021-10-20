@@ -210,7 +210,7 @@ int prownProject(char *path) {
     uid_t uid = getuid();
     int validargs = 0;
     char *projectsroot[PATH_MAX];
-    char real_dir[PATH_MAX], projectdir[PATH_MAX];
+    char real_dir[PATH_MAX];
     char group[PATH_MAX], linux_group[PATH_MAX];
     struct stat sb;
     struct group *g;
@@ -219,6 +219,7 @@ int prownProject(char *path) {
     // if the real path is correct
     if (realpath(path, real_dir)) {
         int isInProjectPath = 0;
+        char projectdir[PATH_MAX];
 
         for (int i = 0; i < nop; i++) {
             int l = strlen(projectsroot[i]);
