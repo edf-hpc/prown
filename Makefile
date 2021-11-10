@@ -15,7 +15,7 @@ CHECK = cppcheck
 CHECKFLAGS ?= -I /usr/include -I /usr/include/linux --enable=all --language=c
 prefix = /usr/local
 all:src/prown
-
+doc:doc/man/prown.1
 
 
 src/prown: $(PROWN_SRC)
@@ -24,6 +24,8 @@ src/prown: $(PROWN_SRC)
 install: src/prown
 	install -D src/prown \
                 $(DESTDIR)$(prefix)/bin/prown
+%.1: %.1.md
+	pandoc --standalone --from markdown --to=man $^ --output $@
 
 clean:
 	-rm -f src/prown tests/isolate */*~
