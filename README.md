@@ -91,7 +91,7 @@ this keyword are ignored.
 ## Usage
 
 For **prown** command usage documentation, please read
-[prown(1) manpage](doc/man/prown1.md). It also contains details of its
+[prown(1) manpage](doc/man/prown.1.md). It also contains details of its
 behaviour with some special cases (symbolic links, directories, etc).
 
 ## Code maintainance
