@@ -4,7 +4,7 @@
 
 **Prown** is a tool designed to give users the possibility to get ownership of
 files in _projects directories_ on POSIX filesystems under some conditions. In
-[EDF](edf) conventions on HPC supercomputers, _project directories_ are
+[EDF][edf] conventions on HPC supercomputers, _project directories_ are
 directories shared by groups of users on filesystems. Project directories and
 inner files have specific ACL (eg. [POSIX ACL][usenix]) to control user/group
 permissions on the files of this project.
