@@ -141,38 +141,38 @@ int is_user_in_group(char group[]) {
 }
 
 /*
- * Returns true if path is under one of the given projects_roots. If true,
- * projects_root string is set with the matching projects_roots.
+ * Returns true if path is under one of the given projects_parents. If true,
+ * project_parent string is set with the matching projects_parents.
  *
- * The projects_root argument must be a preallocated string.
+ * The project_parent argument must be a preallocated string.
  *
  * Examples:
  *
  *   With:
  *
- *     projects_roots = { '/projects', '/data' }
+ *     projects_parents = { '/projects', '/data' }
  *     path = '/projects/awesome/data'
  *
- *     → is_in_projects_roots() returs true and set projects_root to '/projects'.
+ *     → is_in_projects_parents() returs true and set project_parent to '/projects'.
  *
  *   With:
  *
- *     projects_roots = { '/projects', '/data' }
+ *     projects_parentts = { '/projects', '/data' }
  *     path = '/tmp/file'
  *
- *     → is_in_projects_roots() returns false (projects_root is not modified).
+ *     → is_in_projects_parents() returns false (project_parent is not modified).
  */
 
-bool is_in_projects_roots(char **projects_roots, char *projects_root,
-                          const char *path) {
+bool is_in_projects_parents(char **projects_parents, char *project_parent,
+                            const char *path) {
 
     for (int i = 0; i < nop; i++) {
-        int l = strlen(projects_roots[i]);
+        int l = strlen(projects_parents[i]);
 
         //if file in list of projects but not equal the project
-        if ((strncmp(path, projects_roots[i], l) == 0)
-            && (strcmp(path, projects_roots[i]))) {
-            strncpy(projects_root, projects_roots[i], PATH_MAX);
+        if ((strncmp(path, projects_parents[i], l) == 0)
+            && (strcmp(path, projects_parents[i]))) {
+            strncpy(project_parent, projects_parents[i], PATH_MAX);
             return true;
         }
     }
@@ -188,7 +188,7 @@ bool is_in_projects_roots(char **projects_roots, char *projects_root,
  *
  *    With:
  *
- *      projects_root = '/projects'
+ *      project_parent = '/projects'
  *      path = '/projects/awesome/path/to/file'
  *      /projects/awesome directory belonging to root:physic
  *
@@ -197,14 +197,14 @@ bool is_in_projects_roots(char **projects_roots, char *projects_root,
  *        - linux_group to 'physic'
  */
 
-void project_admin_group(char *projects_root, char *project_basedir,
+void project_admin_group(char *project_parent, char *project_basedir,
                          char *path, char *linux_group) {
 
     struct group *g;
     struct stat sb;
 
     // get the path of project
-    int l = strlen(projects_root);
+    int l = strlen(project_parent);
     int h = l + 1;
 
     /* clean allocated memory for strings */
@@ -213,7 +213,7 @@ void project_admin_group(char *projects_root, char *project_basedir,
     while (path[h] != '\0' && path[h] != '/') {
         h++;
     }
-    strcpy(project_basedir, projects_root);
+    strcpy(project_basedir, project_parent);
     /* concat with the basename of project directory */
     strncat(project_basedir, &path[l], h - l);
 
@@ -305,20 +305,21 @@ int projectOwner(char *basepath) {
 }
 
 int prownProject(char *path) {
-    char *projectsroot[PATH_MAX];
+    char *projects_parents[PATH_MAX];
     char real_dir[PATH_MAX];
     bool isInProjectPath;
-    char projectroot[PATH_MAX], projectdir[PATH_MAX], linux_group[PATH_MAX];
+    char project_parent[PATH_MAX], projectdir[PATH_MAX],
+        linux_group[PATH_MAX];
     struct stat path_stat;
 
 
     /* clean allocated memory for strings */
     memset(real_dir, 0, PATH_MAX);
-    memset(projectroot, 0, PATH_MAX);
+    memset(project_parent, 0, PATH_MAX);
     memset(projectdir, 0, PATH_MAX);
     memset(linux_group, 0, PATH_MAX);
 
-    read_config_file("/etc/prown.conf", projectsroot);
+    read_config_file("/etc/prown.conf", projects_parents);
 
     VERBOSE(_("+ Processing path %s\n"), path);
 
@@ -330,7 +331,7 @@ int prownProject(char *path) {
 
     /* check path is under projects roots directories */
     isInProjectPath =
-        is_in_projects_roots(projectsroot, projectroot, real_dir);
+        is_in_projects_parents(projects_parents, project_parent, real_dir);
 
     if (!isInProjectPath) {
         ERROR(_("Changing owner of file outside project parent directories "
@@ -339,7 +340,7 @@ int prownProject(char *path) {
     }
 
     /* get group owner of project base directory */
-    project_admin_group(projectroot, projectdir, real_dir, linux_group);
+    project_admin_group(project_parent, projectdir, real_dir, linux_group);
 
     // if the user hasn't access to the project
     if (is_user_in_group(linux_group) == 1) {
