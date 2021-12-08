@@ -40,6 +40,8 @@
 #define _(STRING) gettext(STRING)
 
 #define VERBOSE(fmt, ...) if(!verbose); else printf(fmt, ## __VA_ARGS__)
+#define ERROR(fmt, ...) \
+        do { fprintf(stderr, fmt, ##__VA_ARGS__); } while (0)
 
 
 /* static variable for verbose mode */
@@ -71,8 +73,7 @@ void read_config_file(char config_filename[], char *projectsdir[]) {
     char buf[MAXLINE];
 
     if ((fp = fopen(config_filename, "r")) == NULL) {
-        fprintf(stderr, _("Failed to open configuration file %s \n"),
-                config_filename);
+        ERROR(_("Failed to open configuration file %s \n"), config_filename);
         exit(EXIT_FAILURE);
     }
     while (!feof(fp)) {
@@ -82,8 +83,8 @@ void read_config_file(char config_filename[], char *projectsdir[]) {
         }
         if (strstr(buf, "PROJECT_DIR ")) {
             if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
-                printf(_("Unable to allocate memory for loading " \
-                         "configuration file parameters\n"));
+                ERROR(_("Unable to allocate memory for loading "
+                        "configuration file parameters\n"));
                 exit(1);
             }
             read_str_from_config_line(buf, projectsdir[nop]);
@@ -278,8 +279,8 @@ int projectOwner(char *basepath) {
 
         // Unable to open directory stream
         if (!dir) {
-            fprintf(stderr, _("Failed to open directory '%s': %s (%d)\n"),
-                    basepath, strerror(errno), errno);
+            ERROR(_("Failed to open directory '%s': %s (%d)\n"), basepath,
+                  strerror(errno), errno);
             return 1;
         }
         while ((dp = readdir(dir)) != NULL) {
@@ -317,7 +318,7 @@ int prownProject(char *path) {
 
     // check the real path is correct
     if (!realpath(path, real_dir)) {
-        printf(_("Path '%s' has not been found, it is discarded\n"), path);
+        ERROR(_("Path '%s' has not been found, it is discarded\n"), path);
         return 0;
     }
 
@@ -326,8 +327,8 @@ int prownProject(char *path) {
         is_in_projects_roots(projectsroot, projectroot, real_dir);
 
     if (!isInProjectPath) {
-        printf(_("Changing owner of file outside project parent directories " \
-                 "is prohibited, path '%s' is discarded\n"), path);
+        ERROR(_("Changing owner of file outside project parent directories "
+                "is prohibited, path '%s' is discarded\n"), path);
         return 0;
     }
 
@@ -336,8 +337,8 @@ int prownProject(char *path) {
 
     // if the user hasn't access to the project
     if (is_user_in_group(linux_group) == 1) {
-        printf(_("Permission denied for project %s, you are not a member of "
-                 "this project administor group\n"), projectdir);
+        ERROR(_("Permission denied for project %s, you are not a member of "
+                "this project administor group\n"), projectdir);
         return 0;
     }
 

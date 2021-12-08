@@ -38,9 +38,9 @@ tests:
       /root:  # check permissions of /root did not changed
         owner: root
         group: root
-    stdout: |
+    stdout: null
+    stderr: |
       Changing owner of file outside project parent directories is prohibited, path '/root' is discarded
-    stderr: null
 
   - name: User not in owner group cannot prown project directory
     prepare: |
@@ -49,9 +49,9 @@ tests:
     user: john
     cmd: $BIN$ lhc
     exitcode: 0
-    stdout: |
+    stdout: null
+    stderr: |
       Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor group
-    stderr: null
 
   - name: User not in owner group cannot prown project directory even when she has access to file
     prepare: |
@@ -70,9 +70,9 @@ tests:
       lhc/data:
         owner: anna
         group: engineering
-    stdout: |
+    stdout: null
+    stderr: |
       Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor group
-    stderr: null
 
   - name: User can prown project but it does not change ownership of project root
     prepare: |
@@ -138,9 +138,9 @@ tests:
     user: mike
     cmd: $BIN$ lhc
     exitcode: 0
-    stdout: |
+    stdout: null
+    stderr: |
       Path 'lhc' has not been found, it is discarded
-    stderr: null
 
   - name: Prown unexisting file
     prepare: |
@@ -150,9 +150,9 @@ tests:
     user: mike
     cmd: $BIN$ lhc/unexisting
     exitcode: 0
-    stdout: |
+    stdout: null
+    stderr: |
       Path 'lhc/unexisting' has not been found, it is discarded
-    stderr: null
 
   - name: User can prown multiple files
     prepare: |
@@ -447,6 +447,6 @@ tests:
     stat:
       lhc/symlink:
         owner: anna  # prown has not changed the source of the symlink
-    stdout: |
+    stdout: null
+    stderr: |
       Path 'lhc/symlink' has not been found, it is discarded
-    stderr: null
