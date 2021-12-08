@@ -183,8 +183,8 @@ bool is_in_projects_parents(char **projects_parents, char *project_parent,
 }
 
 /*
- * Set project_basedir and linux_group with respectively the name of the
- * of the base project directory and the name of the group of this directory.
+ * Set project_root with the path of the root directory of the project
+ * located under project_parent and containing the path in argument.
  *
  * Example:
  *
@@ -192,36 +192,49 @@ bool is_in_projects_parents(char **projects_parents, char *project_parent,
  *
  *      project_parent = '/projects'
  *      path = '/projects/awesome/path/to/file'
- *      /projects/awesome directory belonging to root:physic
  *
- *      → project_admin_group() set
- *        - project_basedir to '/projects/awesome'
- *        - linux_group to 'physic'
+ *    → project_root is '/projects/awesome'
  */
-
-void project_admin_group(char *project_parent, char *path,
-                         char *project_basedir, char *linux_group) {
-
-    struct group *g;
-    struct stat sb;
+void get_project_root(char *project_parent, char *path, char *project_root) {
 
     // get the path of project
     int l = strlen(project_parent);
     int h = l + 1;
 
     /* clean allocated memory for strings */
-    memset(project_basedir, 0, PATH_MAX);
+    memset(project_root, 0, PATH_MAX);
 
     while (path[h] != '\0' && path[h] != '/') {
         h++;
     }
-    strcpy(project_basedir, project_parent);
+    strcpy(project_root, project_parent);
     /* concat with the basename of project directory */
-    strncat(project_basedir, &path[l], h - l);
+    strncat(project_root, &path[l], h - l);
 
-    VERBOSE(_("Project path: %s\n"), project_basedir);
+    VERBOSE(_("Project path: %s\n"), project_root);
 
-    if (stat(project_basedir, &sb) == -1) {
+}
+
+/*
+ * Set linux_group with respectively the name of the group owner of the
+ * project_root directory.
+ *
+ * Example:
+ *
+ *    With:
+ *
+ *      project_root = '/projects/awesome'
+ *      and /projects/awesome directory belonging to root:physic
+ *
+ *    → linux_group to 'physic'
+ */
+
+void project_admin_group(char *project_root, char *linux_group) {
+
+    struct group *g;
+    struct stat sb;
+
+    if (stat(project_root, &sb) == -1) {
         perror(_("Error on stat(): "));
         exit(EXIT_FAILURE);
     }
@@ -310,7 +323,7 @@ int prownProject(char *path) {
     char *projects_parents[PATH_MAX];
     char real_dir[PATH_MAX];
     bool isInProjectPath;
-    char project_parent[PATH_MAX], projectdir[PATH_MAX],
+    char project_parent[PATH_MAX], project_root[PATH_MAX],
         linux_group[PATH_MAX];
     struct stat path_stat;
 
@@ -318,7 +331,7 @@ int prownProject(char *path) {
     /* clean allocated memory for strings */
     memset(real_dir, 0, PATH_MAX);
     memset(project_parent, 0, PATH_MAX);
-    memset(projectdir, 0, PATH_MAX);
+    memset(project_root, 0, PATH_MAX);
     memset(linux_group, 0, PATH_MAX);
 
     read_config_file("/etc/prown.conf", projects_parents);
@@ -341,13 +354,15 @@ int prownProject(char *path) {
         return 0;
     }
 
-    /* get group owner of project base directory */
-    project_admin_group(project_parent, real_dir, projectdir, linux_group);
+    /* get project root directory */
+    get_project_root(project_parent, real_dir, project_root);
+    /* get group owner of project root directory */
+    project_admin_group(project_root, linux_group);
 
     // if the user hasn't access to the project
     if (is_user_in_group(linux_group) == 1) {
         ERROR(_("Permission denied for project %s, you are not a member of "
-                "this project administor group\n"), projectdir);
+                "this project administor group\n"), project_root);
         return 0;
     }
 
@@ -359,7 +374,7 @@ int prownProject(char *path) {
         // chown the real_dir if it's not the projectDir
         // because projectOwner() doesn't chown the entry path
         // but only the chlids
-        if (strcmp(real_dir, projectdir))
+        if (strcmp(real_dir, project_root))
             setOwner(real_dir);
         projectOwner(real_dir);
     }
