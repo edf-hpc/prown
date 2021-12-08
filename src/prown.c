@@ -68,7 +68,7 @@ void read_config_file(char config_filename[], char *projectsdir[]) {
     char buf[MAXLINE];
 
     if ((fp = fopen(config_filename, "r")) == NULL) {
-        fprintf(stderr, _("Failed to open config file %s \n"),
+        fprintf(stderr, _("Failed to open configuration file %s \n"),
                 config_filename);
         exit(EXIT_FAILURE);
     }
@@ -79,7 +79,8 @@ void read_config_file(char config_filename[], char *projectsdir[]) {
         }
         if (strstr(buf, "PROJECT_DIR ")) {
             if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
-                printf(_("Unable to allocate memory \n"));
+                printf(_("Unable to allocate memory for loading " \
+                         "configuration file parameters\n"));
                 exit(1);
             }
             read_str_from_config_line(buf, projectsdir[nop]);
@@ -104,7 +105,7 @@ int is_user_in_group(char group[]) {
     struct passwd *pw = getpwuid(uid);
 
     if (pw == NULL) {
-        perror(_("getpwuid error: "));
+        perror(_("Error on getpwuid(): "));
     }
 
     int ngroups = 0;
@@ -124,10 +125,11 @@ int is_user_in_group(char group[]) {
         struct group *gr = getgrgid(groups[i]);
 
         if (gr == NULL) {
-            perror(_("getgrgid error: "));
+            perror(_("Error on getgrgid(): "));
         }
         if (strcmp(group, gr->gr_name) == 0) {
-            printf(_("group of user: %s\n"), gr->gr_name);
+            printf(_("User is a valid member of project administrator " \
+                     "group %s\n"), gr->gr_name);
             return 0;
         }
     }
@@ -215,16 +217,16 @@ void project_admin_group(char *projects_root, char *project_basedir,
         printf(_("Project path: %s\n"), project_basedir);
     }
     if (stat(project_basedir, &sb) == -1) {
-        perror(_("stat"));
+        perror(_("Error on stat(): "));
         exit(EXIT_FAILURE);
     }
     if (verbose == 1) {
-        printf(_("Ownership: GID=%ld\n"), (long) sb.st_gid);
+        printf(_("Project administrator group GID: %ld\n"), (long) sb.st_gid);
     }
     g = getgrgid((long) sb.st_gid);
     strcpy(linux_group, g->gr_name);
     if (verbose == 1) {
-        printf("%s\n", linux_group);
+        printf(_("Project administrator group name: %s\n"), linux_group);
     }
 }
 
@@ -238,10 +240,10 @@ void project_admin_group(char *projects_root, char *project_basedir,
 void setOwner(const char *path) {
     //use lchown to change owner for symlinks
     if (verbose == 1) {
-        printf(_("changing owner of path %s\n"), path);
+        printf(_("Changing owner of path %s\n"), path);
     }
     if (lchown(path, getuid(), (gid_t) - 1) != 0) {
-        perror(_("chown"));
+        perror(_("Error on chown(): "));
         exit(EXIT_FAILURE);
     }
     //set rwx to user and rw to group if its not a symlink
@@ -253,7 +255,7 @@ void setOwner(const char *path) {
 
         stat(path, &st);
         if (chmod(path, S_IRGRP | S_IWGRP | st.st_mode) != 0) {
-            perror(_("chmod"));
+            perror(_("Error on chmod(): "));
             exit(EXIT_FAILURE);
         }
     }
@@ -299,7 +301,6 @@ int projectOwner(char *basepath) {
 }
 
 int prownProject(char *path) {
-    uid_t uid = getuid();
     char *projectsroot[PATH_MAX];
     char real_dir[PATH_MAX];
     bool isInProjectPath;
@@ -317,7 +318,7 @@ int prownProject(char *path) {
 
     // check the real path is correct
     if (!realpath(path, real_dir)) {
-        printf(_("Warning: directory '%s' not found! (ignored)\n"), path);
+        printf(_("Path '%s' has not been found, it is discarded\n"), path);
         return 0;
     }
 
@@ -326,8 +327,8 @@ int prownProject(char *path) {
         is_in_projects_roots(projectsroot, projectroot, real_dir);
 
     if (!isInProjectPath) {
-        printf(_("You can't take rights everywhere. Directory '%s' will be "
-                 "ignored\n"), path);
+        printf(_("Changing owner of file outside project parent directories " \
+                 "is prohibited, path '%s' is discarded\n"), path);
         return 0;
     }
 
@@ -336,18 +337,17 @@ int prownProject(char *path) {
 
     // if the user hasn't access to the project
     if (is_user_in_group(linux_group) == 1) {
-        printf(_("Error: permission denied for project, you are not in '%s' "
-                 "group \n"), linux_group);
+        printf(_("Permission denied for project %s, you are not a member of "
+                 "this project administor group\n"), projectdir);
         return 0;
     }
 
-    printf(_("Setting owner of %s directory %s to %u\n"), path, real_dir,
-           uid);
+    printf(_("Changing owner of directory %s\n"), real_dir);
 
     stat(real_dir, &path_stat);
     //if it's a file we should call setOwner one time
     if (path_stat.st_mode & S_IFREG) {
-        printf(_("owning file %s\n"), real_dir);
+        printf(_("Changing owner of file %s\n"), real_dir);
         setOwner(real_dir);
     } else {
         // chown the real_dir if it's not the projectDir
@@ -369,27 +369,30 @@ int prownProject(char *path) {
 
 void usage(int status) {
     if (status != EXIT_SUCCESS)
-        printf(_
-               ("Saisissez « prown --help » pour plus d'informations.\n"));
+        printf(_("Try 'prown --help' for more information.\n"));
     else {
-        printf(_("Utilisation: prown[OPTION]... FICHIER...\n"
-                 "Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE "
-                 "en PROPRIO actuel.\n"
+        printf(_("Usage: prown [OPTION]... PATH...\n"
+                 "Give user ownership of PATH in project directories. If the "
+                 "PATH is a directory,\nit gives user ownership of all files "
+                 "in this directory recursively.\n"
                  "\n"
-                 "-v, --verbose          afficher en détail les fichiers "
-                 "modifiés\n"
-                 "-h, --help             afficher l'aide et quitter\n"
+                 "  -v, --verbose          Display modified paths and more "
+                 "information\n"
+                 "  -h, --help             Display this help and exit\n"
                  "\n"
-                 "L'utilisateur doit avoir le droit d'écriture sur le fichier "
-                 "ou le dossier qu'il souhaite posséder.\n"
+                 "The user must be a member of project administrator group "
+                 "to take ownership of\npath in a project directory.\n"
                  "\n"
-                 "Exemples :\n"
-                 "  prown ccnhpc           devenir propriétaire sur le projet "
-                 "ccnhpc\n"
-                 "  prown ccnhpc saturne   devenir propriétaire sur le projet "
-                 "ccnhpc et saturne\n"
-                 "  prown ccnhpc/file      devenir propriétaire sur le "
-                 "fichier ccnhpc/file \n"));
+                 "Examples :\n"
+                 "  prown awesome/data     Take ownership of data file in "
+                 "awesome\n"
+                 "                         project directory\n"
+                 "  prown awesome          Take ownership of awesome "
+                 "project\n"
+                 "                         directory recursively\n"
+                 "  prown awesome crazy    Take ownership of both awesome "
+                 "and crazy\n"
+                 "                         project directories recursively\n"));
     }
 }
 
@@ -426,7 +429,7 @@ int main(int argc, char **argv) {
         }
     }
     if ((argc == 1 || optind == argc) && (help != 1)) {
-        error(0, 0, _("opérande manquant"));
+        error(0, 0, _("Missing path operand"));
         usage(EXIT_FAILURE);
     } else {
         for (; optind < argc; optind++) {
