@@ -184,13 +184,13 @@ tests:
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic
-      User is a valid member of project administrator group physic
+      User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/data1
       \+ Processing path lhc/data2
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic
-      User is a valid member of project administrator group physic
+      User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/data2
     stderr: null
 
@@ -239,7 +239,7 @@ tests:
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic
-      User is a valid member of project administrator group physic
+      User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/subdir1
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir1 content
       Changing owner of path /var/tmp/projects/lhc/subdir1/data
@@ -247,7 +247,7 @@ tests:
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic
-      User is a valid member of project administrator group physic
+      User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/subdir2
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir2 content
       Changing owner of path /var/tmp/projects/lhc/subdir2/data

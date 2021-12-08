@@ -103,18 +103,19 @@ void read_config_file(char config_filename[], char *projects_parents[]) {
  **********************************************************/
 
 /*
- * Check if user is in group
- * Returns 0 if valid, 1 otherwise.
+ * Returns true if user is member of group whose gid is in a
+ * argument, false otherwise.
  */
-int is_user_in_group(char group[]) {
-    __uid_t uid = getuid();
-    struct passwd *pw = getpwuid(uid);
+bool is_user_in_group(gid_t gid) {
+
+    struct passwd *pw;
+    int ngroups = 0;
+
+    pw = getpwuid(getuid());
 
     if (pw == NULL) {
         perror(_("Error on getpwuid(): "));
     }
-
-    int ngroups = 0;
 
     //this call is just to get the correct ngroups
     getgrouplist(pw->pw_name, pw->pw_gid, NULL, &ngroups);
@@ -123,23 +124,13 @@ int is_user_in_group(char group[]) {
     //here we actually get the groups
     getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups);
 
-
-    //example to print the groups name
-    int i;
-
-    for (i = 0; i < ngroups; i++) {
-        struct group *gr = getgrgid(groups[i]);
-
-        if (gr == NULL) {
-            perror(_("Error on getgrgid(): "));
-        }
-        if (strcmp(group, gr->gr_name) == 0) {
-            VERBOSE(_("User is a valid member of project administrator "
-                      "group %s\n"), gr->gr_name);
-            return 0;
+    for (int i = 0; i < ngroups; i++) {
+        if (groups[i] == gid) {
+            VERBOSE(_("User is a valid member of group %d\n"), gid);
+            return true;
         }
     }
-    return 1;
+    return false;
 }
 
 /*
@@ -217,20 +208,12 @@ void get_project_root(char *project_parent, char *path, char *project_root) {
 }
 
 /*
- * Set linux_group with respectively the name of the group owner of the
- * project_root directory.
- *
- * Example:
- *
- *    With:
- *
- *      project_root = '/projects/awesome'
- *      and /projects/awesome directory belonging to root:physic
- *
- *    → linux_group to 'physic'
+ * Returns true if the current user is a valid administrator of the project,
+ * ie. she/he is a member of the project group owner of the project root
+ * directory.
  */
 
-void project_admin_group(const char *project_root, char *linux_group) {
+bool is_user_project_admin(const char *project_root) {
 
     struct group *g;
     struct stat sb;
@@ -239,31 +222,12 @@ void project_admin_group(const char *project_root, char *linux_group) {
         perror(_("Error on stat(): "));
         exit(EXIT_FAILURE);
     }
+    g = getgrgid((long) sb.st_gid);
 
     VERBOSE(_("Project administrator group GID: %ld\n"), (long) sb.st_gid);
+    VERBOSE(_("Project administrator group name: %s\n"), g->gr_name);
 
-    g = getgrgid((long) sb.st_gid);
-    strcpy(linux_group, g->gr_name);
-
-    VERBOSE(_("Project administrator group name: %s\n"), linux_group);
-}
-
-/*
- * Returns true if the current user is a valid administrator of the project,
- * ie. she/he is a member of the project group owner of the project root
- * directory.
- */
-
-bool is_user_project_admin(const char *project_root) {
-
-    char linux_group[PATH_MAX];
-    memset(linux_group, 0, PATH_MAX);
-
-    /* get group owner of project root directory */
-    project_admin_group(project_root, linux_group);
-
-    /* return true if the user is member of linux_group */
-    return is_user_in_group(linux_group) == 0;
+    return is_user_in_group(sb.st_gid);
 
 }
 
