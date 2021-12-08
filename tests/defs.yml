@@ -180,11 +180,13 @@ tests:
     cmd: $BIN$ --verbose lhc/data1 lhc/data2
     exitcode: 0
     stdout: |
+      \+ Processing path lhc/data1
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic
       User is a valid member of project administrator group physic
       Changing owner of path /var/tmp/projects/lhc/data1
+      \+ Processing path lhc/data2
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic
@@ -233,6 +235,7 @@ tests:
     cmd: $BIN$ --verbose lhc/subdir1 lhc/subdir2
     exitcode: 0
     stdout: |
+      \+ Processing path lhc/subdir1
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic
@@ -240,6 +243,7 @@ tests:
       Changing owner of path /var/tmp/projects/lhc/subdir1
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir1 content
       Changing owner of path /var/tmp/projects/lhc/subdir1/data
+      \+ Processing path lhc/subdir2
       Project path: /var/tmp/projects/lhc
       Project administrator group GID: \d+
       Project administrator group name: physic

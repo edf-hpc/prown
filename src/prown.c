@@ -320,6 +320,8 @@ int prownProject(char *path) {
 
     read_config_file("/etc/prown.conf", projectsroot);
 
+    VERBOSE(_("+ Processing path %s\n"), path);
+
     // check the real path is correct
     if (!realpath(path, real_dir)) {
         ERROR(_("Path '%s' has not been found, it is discarded\n"), path);
