@@ -199,8 +199,8 @@ bool is_in_projects_parents(char **projects_parents, char *project_parent,
  *        - linux_group to 'physic'
  */
 
-void project_admin_group(char *project_parent, char *project_basedir,
-                         char *path, char *linux_group) {
+void project_admin_group(char *project_parent, char *path,
+                         char *project_basedir, char *linux_group) {
 
     struct group *g;
     struct stat sb;
@@ -342,7 +342,7 @@ int prownProject(char *path) {
     }
 
     /* get group owner of project base directory */
-    project_admin_group(project_parent, projectdir, real_dir, linux_group);
+    project_admin_group(project_parent, real_dir, projectdir, linux_group);
 
     // if the user hasn't access to the project
     if (is_user_in_group(linux_group) == 1) {
