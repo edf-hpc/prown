@@ -39,6 +39,9 @@
 #define MAXLINE  1000
 #define _(STRING) gettext(STRING)
 
+#define VERBOSE(fmt, ...) if(!verbose); else printf(fmt, ## __VA_ARGS__)
+
+
 /* static variable for verbose mode */
 static int verbose;
 
@@ -213,21 +216,19 @@ void project_admin_group(char *projects_root, char *project_basedir,
     /* concat with the basename of project directory */
     strncat(project_basedir, &path[l], h - l);
 
-    if (verbose == 1) {
-        printf(_("Project path: %s\n"), project_basedir);
-    }
+    VERBOSE(_("Project path: %s\n"), project_basedir);
+
     if (stat(project_basedir, &sb) == -1) {
         perror(_("Error on stat(): "));
         exit(EXIT_FAILURE);
     }
-    if (verbose == 1) {
-        printf(_("Project administrator group GID: %ld\n"), (long) sb.st_gid);
-    }
+
+    VERBOSE(_("Project administrator group GID: %ld\n"), (long) sb.st_gid);
+
     g = getgrgid((long) sb.st_gid);
     strcpy(linux_group, g->gr_name);
-    if (verbose == 1) {
-        printf(_("Project administrator group name: %s\n"), linux_group);
-    }
+
+    VERBOSE(_("Project administrator group name: %s\n"), linux_group);
 }
 
 /**********************************************************
@@ -239,9 +240,7 @@ void project_admin_group(char *projects_root, char *project_basedir,
 /*set user as the owner of the current file or directory*/
 void setOwner(const char *path) {
     //use lchown to change owner for symlinks
-    if (verbose == 1) {
-        printf(_("Changing owner of path %s\n"), path);
-    }
+    VERBOSE(_("Changing owner of path %s\n"), path);
     if (lchown(path, getuid(), (gid_t) - 1) != 0) {
         perror(_("Error on chown(): "));
         exit(EXIT_FAILURE);
