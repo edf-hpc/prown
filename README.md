@@ -16,7 +16,7 @@ ownership (with `chown`). The process performing the `chown()` system call must
 have [`CAP_CHOWN` capability][capabilities].
 
 **Prown** is designed to give a *project administrator group* of users the
-possibility to get ownership of files its project directory on POSIX
+possibility to get ownership of files in its project directory on POSIX
 filesystems, so they can then change permissions on these files. The *project
 administator group* is the group owner of the project directory.
 
@@ -142,4 +142,4 @@ Tests require `sudo` to prepare the testing environment as root.
 
 ## Licence
 
-**Prown** is distributed under the terms of the GPL v3 licence.
+**Prown** is distributed under the terms of the GPL v3 license.
