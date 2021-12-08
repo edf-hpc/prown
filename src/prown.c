@@ -33,9 +33,11 @@
 #include <grp.h>
 #include <errno.h>
 #include <stdbool.h>
-
+#include <libintl.h>
+#include <locale.h>
 
 #define MAXLINE  1000
+#define _(STRING) gettext(STRING)
 
 /* static variable for verbose mode */
 static int verbose;
@@ -66,7 +68,8 @@ void read_config_file(char config_filename[], char *projectsdir[]) {
     char buf[MAXLINE];
 
     if ((fp = fopen(config_filename, "r")) == NULL) {
-        fprintf(stderr, "Failed to open config file %s \n", config_filename);
+        fprintf(stderr, _("Failed to open config file %s \n"),
+                config_filename);
         exit(EXIT_FAILURE);
     }
     while (!feof(fp)) {
@@ -76,7 +79,7 @@ void read_config_file(char config_filename[], char *projectsdir[]) {
         }
         if (strstr(buf, "PROJECT_DIR ")) {
             if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
-                printf("Unable to allocate memory \n");
+                printf(_("Unable to allocate memory \n"));
                 exit(1);
             }
             read_str_from_config_line(buf, projectsdir[nop]);
@@ -101,7 +104,7 @@ int is_user_in_group(char group[]) {
     struct passwd *pw = getpwuid(uid);
 
     if (pw == NULL) {
-        perror("getpwuid error: ");
+        perror(_("getpwuid error: "));
     }
 
     int ngroups = 0;
@@ -121,10 +124,10 @@ int is_user_in_group(char group[]) {
         struct group *gr = getgrgid(groups[i]);
 
         if (gr == NULL) {
-            perror("getgrgid error: ");
+            perror(_("getgrgid error: "));
         }
         if (strcmp(group, gr->gr_name) == 0) {
-            printf("group of user: %s\n", gr->gr_name);
+            printf(_("group of user: %s\n"), gr->gr_name);
             return 0;
         }
     }
@@ -209,14 +212,14 @@ void project_admin_group(char *projects_root, char *project_basedir,
     strncat(project_basedir, &path[l], h - l);
 
     if (verbose == 1) {
-        printf("Project path: %s\n", project_basedir);
+        printf(_("Project path: %s\n"), project_basedir);
     }
     if (stat(project_basedir, &sb) == -1) {
-        perror("stat");
+        perror(_("stat"));
         exit(EXIT_FAILURE);
     }
     if (verbose == 1) {
-        printf("Ownership: GID=%ld\n", (long) sb.st_gid);
+        printf(_("Ownership: GID=%ld\n"), (long) sb.st_gid);
     }
     g = getgrgid((long) sb.st_gid);
     strcpy(linux_group, g->gr_name);
@@ -235,10 +238,10 @@ void project_admin_group(char *projects_root, char *project_basedir,
 void setOwner(const char *path) {
     //use lchown to change owner for symlinks
     if (verbose == 1) {
-        printf("changing owner of path %s\n", path);
+        printf(_("changing owner of path %s\n"), path);
     }
     if (lchown(path, getuid(), (gid_t) - 1) != 0) {
-        perror("chown");
+        perror(_("chown"));
         exit(EXIT_FAILURE);
     }
     //set rwx to user and rw to group if its not a symlink
@@ -250,7 +253,7 @@ void setOwner(const char *path) {
 
         stat(path, &st);
         if (chmod(path, S_IRGRP | S_IWGRP | st.st_mode) != 0) {
-            perror("chmod");
+            perror(_("chmod"));
             exit(EXIT_FAILURE);
         }
     }
@@ -274,7 +277,7 @@ int projectOwner(char *basepath) {
 
         // Unable to open directory stream
         if (!dir) {
-            fprintf(stderr, "Failed to open directory '%s': %s (%d)\n",
+            fprintf(stderr, _("Failed to open directory '%s': %s (%d)\n"),
                     basepath, strerror(errno), errno);
             return 1;
         }
@@ -314,7 +317,7 @@ int prownProject(char *path) {
 
     // check the real path is correct
     if (!realpath(path, real_dir)) {
-        printf("Warning: directory '%s' not found! (ignored)\n", path);
+        printf(_("Warning: directory '%s' not found! (ignored)\n"), path);
         return 0;
     }
 
@@ -323,9 +326,8 @@ int prownProject(char *path) {
         is_in_projects_roots(projectsroot, projectroot, real_dir);
 
     if (!isInProjectPath) {
-        printf
-            ("You can't take rights everywhere. Directory '%s' will be ignored\n",
-             path);
+        printf(_("You can't take rights everywhere. Directory '%s' will be "
+                 "ignored\n"), path);
         return 0;
     }
 
@@ -334,17 +336,18 @@ int prownProject(char *path) {
 
     // if the user hasn't access to the project
     if (is_user_in_group(linux_group) == 1) {
-        printf("Error: permission denied for project \n");
-        printf("       you are not in '%s' group \n", linux_group);
+        printf(_("Error: permission denied for project, you are not in '%s' "
+                 "group \n"), linux_group);
         return 0;
     }
 
-    printf("Setting owner of %s  directory %s to %u\n", path, real_dir, uid);
+    printf(_("Setting owner of %s directory %s to %u\n"), path, real_dir,
+           uid);
 
     stat(real_dir, &path_stat);
     //if it's a file we should call setOwner one time
     if (path_stat.st_mode & S_IFREG) {
-        printf("owning file %s\n", real_dir);
+        printf(_("owning file %s\n"), real_dir);
         setOwner(real_dir);
     } else {
         // chown the real_dir if it's not the projectDir
@@ -366,26 +369,27 @@ int prownProject(char *path) {
 
 void usage(int status) {
     if (status != EXIT_SUCCESS)
-        printf("Saisissez « prown --help » pour plus d'informations.\n");
+        printf(_
+               ("Saisissez « prown --help » pour plus d'informations.\n"));
     else {
-        printf("Utilisation: prown[OPTION]... FICHIER...\n"
-               "Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE en "
-               "PROPRIO actuel.\n"
-               "\n"
-               "-v, --verbose          afficher en détail les fichiers "
-               "modifiés\n"
-               "-h, --help             afficher l'aide et quitter\n"
-               "\n"
-               "L'utilisateur doit avoir le droit d'écriture sur le fichier "
-               "ou le dossier qu'il souhaite posséder.\n"
-               "\n"
-               "Exemples :\n"
-               "  prown ccnhpc           devenir propriétaire sur le projet "
-               "ccnhpc\n"
-               "  prown ccnhpc saturne   devenir propriétaire sur le projet "
-               "ccnhpc et saturne\n"
-               "  prown ccnhpc/file      devenir propriétaire sur le "
-               "fichier ccnhpc/file \n");
+        printf(_("Utilisation: prown[OPTION]... FICHIER...\n"
+                 "Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE "
+                 "en PROPRIO actuel.\n"
+                 "\n"
+                 "-v, --verbose          afficher en détail les fichiers "
+                 "modifiés\n"
+                 "-h, --help             afficher l'aide et quitter\n"
+                 "\n"
+                 "L'utilisateur doit avoir le droit d'écriture sur le fichier "
+                 "ou le dossier qu'il souhaite posséder.\n"
+                 "\n"
+                 "Exemples :\n"
+                 "  prown ccnhpc           devenir propriétaire sur le projet "
+                 "ccnhpc\n"
+                 "  prown ccnhpc saturne   devenir propriétaire sur le projet "
+                 "ccnhpc et saturne\n"
+                 "  prown ccnhpc/file      devenir propriétaire sur le "
+                 "fichier ccnhpc/file \n"));
     }
 }
 
@@ -400,6 +404,11 @@ int main(int argc, char **argv) {
         {"verbose", no_argument, NULL, 'v'},
         {NULL, 0, NULL, 0}
     };
+
+    /* Setting the i18n environment */
+    setlocale(LC_ALL, "");
+    bindtextdomain("prown", "/usr/share/locale/");
+    textdomain("prown");
 
     while ((opt =
             getopt_long(argc, argv, options, longopts, &longindex)) != -1) {
@@ -417,7 +426,7 @@ int main(int argc, char **argv) {
         }
     }
     if ((argc == 1 || optind == argc) && (help != 1)) {
-        error(0, 0, "opérande manquant");
+        error(0, 0, _("opérande manquant"));
         usage(EXIT_FAILURE);
     } else {
         for (; optind < argc; optind++) {
