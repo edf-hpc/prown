@@ -182,7 +182,7 @@ bool is_in_projects_roots(char **projects_roots, char *projects_root,
  *
  *    With:
  *
- *      projets_root = '/projects'
+ *      projects_root = '/projects'
  *      path = '/projects/awesome/path/to/file'
  *      /projects/awesome directory belonging to root:physic
  *
