@@ -66,9 +66,9 @@ void read_str_from_config_line(char *config_line, char *val) {
 }
 
 /*
- * Read config file. projectsdir is the lis of projects
+ * Read config file. projects_parents is the lis of projects
  * */
-void read_config_file(char config_filename[], char *projectsdir[]) {
+void read_config_file(char config_filename[], char *projects_parents[]) {
     FILE *fp;
     char buf[MAXLINE];
 
@@ -82,12 +82,14 @@ void read_config_file(char config_filename[], char *projectsdir[]) {
             continue;
         }
         if (strstr(buf, "PROJECT_DIR ")) {
-            if ((projectsdir[nop] = malloc(sizeof(char) * PATH_MAX)) == NULL) {
-                ERROR(_("Unable to allocate memory for loading "
-                        "configuration file parameters\n"));
+            if ((projects_parents[nop] =
+                 malloc(sizeof(char) * PATH_MAX)) == NULL) {
+                ERROR(_
+                      ("Unable to allocate memory for loading "
+                       "configuration file parameters\n"));
                 exit(1);
             }
-            read_str_from_config_line(buf, projectsdir[nop]);
+            read_str_from_config_line(buf, projects_parents[nop]);
             nop++;
         }
     }
