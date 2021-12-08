@@ -368,23 +368,24 @@ void usage(int status) {
     if (status != EXIT_SUCCESS)
         printf("Saisissez « prown --help » pour plus d'informations.\n");
     else {
-        printf("Utilisation: prown[OPTION]... FICHIER...\n");
-        printf
-            ("Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE en PROPRIO actuel.\n");
-        printf
-            ("\n-v, --verbose          afficher en détail les fichiers modifiés\n");
-        printf("-h, --help             afficher l'aide et quitter\n");
-        printf
-            ("\nL'utilisateur doit avoir le droit d'écriture sur le fichier ou le dossier\n");
-        printf("qu'il souhaite posséder.\n");
-        printf("\nExemples :\n");
-        printf
-            ("  prown ccnhpc           devenir propriétaire sur le projet ccnhpc\n");
-        printf
-            ("  prown ccnhpc saturne   devenir propriétaire sur le projet ccnhpc et saturne\n");
-        printf
-            ("  prown ccnhpc/file      devenir propriétaire sur le fichier ccnhpc/file \n");
-
+        printf("Utilisation: prown[OPTION]... FICHIER...\n"
+               "Modifier le propriétaire du PROJET, FICHIER ou REPERTOIRE en "
+               "PROPRIO actuel.\n"
+               "\n"
+               "-v, --verbose          afficher en détail les fichiers "
+               "modifiés\n"
+               "-h, --help             afficher l'aide et quitter\n"
+               "\n"
+               "L'utilisateur doit avoir le droit d'écriture sur le fichier "
+               "ou le dossier qu'il souhaite posséder.\n"
+               "\n"
+               "Exemples :\n"
+               "  prown ccnhpc           devenir propriétaire sur le projet "
+               "ccnhpc\n"
+               "  prown ccnhpc saturne   devenir propriétaire sur le projet "
+               "ccnhpc et saturne\n"
+               "  prown ccnhpc/file      devenir propriétaire sur le "
+               "fichier ccnhpc/file \n");
     }
 }
 
