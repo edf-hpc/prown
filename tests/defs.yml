@@ -85,9 +85,7 @@ tests:
       lhc:
         owner: root
         group: physic
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc
+    stdout: null
     stderr: null
 
   - name: User in owner group can prown project and become owner of project files
@@ -106,9 +104,7 @@ tests:
       lhc/data:
         owner: mike  # prown has changed from anna to mike after recursive work into lhc
         group: physic
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc
+    stdout: null
     stderr: null
 
   - name: User in owner group can prown directely pointed project file
@@ -127,10 +123,7 @@ tests:
       lhc/data:
         owner: mike  # prown has changed from anna to mike
         group: physic
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/data
-      Changing owner of file /var/tmp/projects/lhc/data
+    stdout: null
     stderr: null
 
   - name: Prown project directory
@@ -171,13 +164,32 @@ tests:
         owner: mike  # prown has changed from anna to mike
       lhc/data2:
         owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: User can prown multiple files in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data1
+        touch lhc/data2
+      }"
+    user: mike
+    cmd: $BIN$ --verbose lhc/data1 lhc/data2
+    exitcode: 0
     stdout: |
+      Project path: /var/tmp/projects/lhc
+      Project administrator group GID: \d+
+      Project administrator group name: physic
       User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/data1
-      Changing owner of file /var/tmp/projects/lhc/data1
+      Changing owner of path /var/tmp/projects/lhc/data1
+      Project path: /var/tmp/projects/lhc
+      Project administrator group GID: \d+
+      Project administrator group name: physic
       User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/data2
-      Changing owner of file /var/tmp/projects/lhc/data2
+      Changing owner of path /var/tmp/projects/lhc/data2
     stderr: null
 
   - name: User can prown multiple directories
@@ -203,11 +215,38 @@ tests:
         owner: mike  # prown has changed from anna to mike
       lhc/subdir2/data:
         owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: User can prown multiple directories in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ --verbose lhc/subdir1 lhc/subdir2
+    exitcode: 0
     stdout: |
+      Project path: /var/tmp/projects/lhc
+      Project administrator group GID: \d+
+      Project administrator group name: physic
       User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/subdir1
+      Changing owner of path /var/tmp/projects/lhc/subdir1
+      Changing recursively owner of directory /var/tmp/projects/lhc/subdir1 content
+      Changing owner of path /var/tmp/projects/lhc/subdir1/data
+      Project path: /var/tmp/projects/lhc
+      Project administrator group GID: \d+
+      Project administrator group name: physic
       User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/subdir2
+      Changing owner of path /var/tmp/projects/lhc/subdir2
+      Changing recursively owner of directory /var/tmp/projects/lhc/subdir2 content
+      Changing owner of path /var/tmp/projects/lhc/subdir2/data
     stderr: null
 
   - name: User can prown glob files
@@ -228,13 +267,7 @@ tests:
         owner: mike  # prown has changed from anna to mike
       lhc/data2:
         owner: mike  # prown has changed from anna to mike
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/data1
-      Changing owner of file /var/tmp/projects/lhc/data1
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/data2
-      Changing owner of file /var/tmp/projects/lhc/data2
+    stdout: null
     stderr: null
 
   - name: User can prown glob directories
@@ -261,11 +294,7 @@ tests:
         owner: mike  # prown has changed from anna to mike
       lhc/subdir2/data:
         owner: mike  # prown has changed from anna to mike
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/subdir1
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/subdir2
+    stdout: null
     stderr: null
 
   - name: Prown works even if user does not have access to file in a directory
@@ -284,9 +313,7 @@ tests:
       lhc/data:
         owner: mike  # mike did not had access to lhc/data but prown changed owner anyway
         mode: 0o460  # prown set g+rw
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc
+    stdout: null
     stderr: null
 
   - name: Prown works even if user does not have access to directly pointed file
@@ -305,10 +332,7 @@ tests:
       lhc/data:
         owner: mike  # mike did not had access to lhc/data but prown changed owner anyway
         mode: 0o660  # prown set g+rw
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/data
-      Changing owner of file /var/tmp/projects/lhc/data
+    stdout: null
     stderr: null
 
   - name: Prown works even in user does have access to directory (4ddffaa)
@@ -330,9 +354,7 @@ tests:
         mode: 0o760  # prown set g+rw
       lhc/subdir/data:
         owner: mike  # mike did not had access to lhc/subdir/data but prown changed owner anyway
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc
+    stdout: null
     stderr: null
 
   - name: Prown does not follow symlink to file inside project directory
@@ -357,9 +379,7 @@ tests:
         owner: mike  # prown has changed owner of the source of the symlink
       lhc/target/symlink:
         owner: anna  # prown did not change symlink target owner inside project directory
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/source
+    stdout: null
     stderr: null
 
   - name: Prown does not follow symlink to directory inside project directory
@@ -386,9 +406,7 @@ tests:
         owner: anna  # prown did not change symlink target directory
       lhc/target/data:
         owner: anna  # prown did not change owner inside directory pointed by the symlink
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/source
+    stdout: null
     stderr: null
 
   - name: Prown does not follow symlink outside project directory
@@ -405,9 +423,7 @@ tests:
     stat:
       /root:
         owner: root # prown did not change symlink target owner outside project directory
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc
+    stdout: null
     stderr: null
 
   - name: Prown does not fail with symlink in subdirectory pointing to not accessible target
@@ -428,9 +444,7 @@ tests:
         owner: mike
       lhc/source/symlink:
         owner: mike  # prown has changed owner of the source of the symlink even if its target is not accessible
-    stdout: |
-      User is a valid member of project administrator group physic
-      Changing owner of directory /var/tmp/projects/lhc/source
+    stdout: null
     stderr: null
 
   - name: Prown fails with direct symlink pointing to not accessible target

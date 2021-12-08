@@ -30,6 +30,7 @@ import subprocess
 import codecs
 import sys
 import textwrap
+import re
 
 TESTS_DEFS_YML='tests/defs.yml'
 
@@ -234,7 +235,7 @@ def cmp_output(output, captured, expected):
     else:
         expected = expected.replace("$TMPDIR$", tmpdir)
         expected = expected.replace("$UID$", str(os.getuid()))
-        if captured != expected:
+        if re.match(expected, captured) is None:
            report_error = True
     if report_error:
         msg  = "----- [captured %s begin] -----\n" % (output)

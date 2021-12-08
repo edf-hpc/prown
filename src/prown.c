@@ -132,8 +132,8 @@ int is_user_in_group(char group[]) {
             perror(_("Error on getgrgid(): "));
         }
         if (strcmp(group, gr->gr_name) == 0) {
-            printf(_("User is a valid member of project administrator " \
-                     "group %s\n"), gr->gr_name);
+            VERBOSE(_("User is a valid member of project administrator "
+                      "group %s\n"), gr->gr_name);
             return 0;
         }
     }
@@ -283,6 +283,10 @@ int projectOwner(char *basepath) {
                   strerror(errno), errno);
             return 1;
         }
+
+        VERBOSE(_("Changing recursively owner of directory %s content\n"),
+                basepath);
+
         while ((dp = readdir(dir)) != NULL) {
             if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
                 && strcmp(dp->d_name, basepath) != 0) {
@@ -342,12 +346,9 @@ int prownProject(char *path) {
         return 0;
     }
 
-    printf(_("Changing owner of directory %s\n"), real_dir);
-
     stat(real_dir, &path_stat);
     //if it's a file we should call setOwner one time
     if (path_stat.st_mode & S_IFREG) {
-        printf(_("Changing owner of file %s\n"), real_dir);
         setOwner(real_dir);
     } else {
         // chown the real_dir if it's not the projectDir
