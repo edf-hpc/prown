@@ -195,6 +195,7 @@ bool is_in_projects_parents(char **projects_parents, char *project_parent,
  *
  *    → project_root is '/projects/awesome'
  */
+
 void get_project_root(char *project_parent, char *path, char *project_root) {
 
     // get the path of project
@@ -229,7 +230,7 @@ void get_project_root(char *project_parent, char *path, char *project_root) {
  *    → linux_group to 'physic'
  */
 
-void project_admin_group(char *project_root, char *linux_group) {
+void project_admin_group(const char *project_root, char *linux_group) {
 
     struct group *g;
     struct stat sb;
@@ -246,6 +247,26 @@ void project_admin_group(char *project_root, char *linux_group) {
 
     VERBOSE(_("Project administrator group name: %s\n"), linux_group);
 }
+
+/*
+ * Returns true if the current user is a valid administrator of the project,
+ * ie. she/he is a member of the project group owner of the project root
+ * directory.
+ */
+
+bool is_user_project_admin(const char *project_root) {
+
+    char linux_group[PATH_MAX];
+    memset(linux_group, 0, PATH_MAX);
+
+    /* get group owner of project root directory */
+    project_admin_group(project_root, linux_group);
+
+    /* return true if the user is member of linux_group */
+    return is_user_in_group(linux_group) == 0;
+
+}
+
 
 /**********************************************************
  *                                                        *
@@ -323,8 +344,7 @@ int prownProject(char *path) {
     char *projects_parents[PATH_MAX];
     char real_dir[PATH_MAX];
     bool isInProjectPath;
-    char project_parent[PATH_MAX], project_root[PATH_MAX],
-        linux_group[PATH_MAX];
+    char project_parent[PATH_MAX], project_root[PATH_MAX];
     struct stat path_stat;
 
 
@@ -332,7 +352,6 @@ int prownProject(char *path) {
     memset(real_dir, 0, PATH_MAX);
     memset(project_parent, 0, PATH_MAX);
     memset(project_root, 0, PATH_MAX);
-    memset(linux_group, 0, PATH_MAX);
 
     read_config_file("/etc/prown.conf", projects_parents);
 
@@ -356,11 +375,9 @@ int prownProject(char *path) {
 
     /* get project root directory */
     get_project_root(project_parent, real_dir, project_root);
-    /* get group owner of project root directory */
-    project_admin_group(project_root, linux_group);
 
-    // if the user hasn't access to the project
-    if (is_user_in_group(linux_group) == 1) {
+    /* check user is administrator of this project */
+    if (!is_user_project_admin(project_root)) {
         ERROR(_("Permission denied for project %s, you are not a member of "
                 "this project administor group\n"), project_root);
         return 0;
