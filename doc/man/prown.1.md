@@ -45,15 +45,19 @@ mask entry when POSIX ACL are defined. The goal is to ensure permissions on
 named user and group ACL entries are mostly effectives after *prown*
 processing.
 
+By default, **prown** does not display anything except errors when encountered.
+The option `-v, --verbose` can be used to display all modified paths along with
+runtime information.
+
 Some options are available:
 
 `-h, --help`
 
-:   Show the help message and exit
+:   Display the help message and exit
 
 `-v, --verbose`
 
-:   Show more details about modifications on files
+:   Display modified paths and more information
 
 # EXAMPLES
 
