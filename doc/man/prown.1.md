@@ -15,12 +15,19 @@ directories. Project directories are subdirectories of directories declared in
 **prown** configuration file (see **FILES** section).
 
 Users are granted to use **prown** in a project directory if they are member of
-this project « administrator group » of this project. The « project
-administrator group » is the group owner of the project directory. For exemple,
-considering a project directory */path/to/awesome* owned by group _physic_,
-all members of the _physic_ group can use **prown** in */path/to/awesome*.
+the « administrator groups » of this project. The « project administrator
+groups » are the union of the group owner of the project root directory and the
+groups having a POSIX ACL with write permission attached to the project root
+directory. Note that ACL entries for individual users and ACL entries without
+write permission are ignored.
 
-Files paths in arguments can be absolute or relative paths.
+For exemple, considering a project directory */path/to/awesome* owned by
+_physic_ group, all members of this group can use **prown** in
+*/path/to/awesome*. If */path/to/awesome* directory also has an ACL entry with
+write permission for _engineering_ group, all members of this group can also
+use **prown** in */path/to/awesome*.
+
+Files paths in arguments **prown** can be absolute or relative paths.
 
 If multiple files are given in arguments, **prown** changes owner of all the
 given files.

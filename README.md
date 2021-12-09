@@ -15,10 +15,12 @@ file (or [`CAP_FOWNER` capability][capabilities]). Users cannot get file
 ownership (with `chown`). The process performing the `chown()` system call must
 have [`CAP_CHOWN` capability][capabilities].
 
-**Prown** is designed to give a *project administrator group* of users the
+**Prown** is designed to give *project administrator groups* of users the
 possibility to get ownership of files in its project directory on POSIX
 filesystems, so they can then change permissions on these files. The *project
-administator group* is the group owner of the project directory.
+administator groups* are the union of the group owner of the project root
+directory and the groups having a POSIX ACL with write permission attached to
+the project root directory.
 
 Here is a typical example, considering an _awesome_ project directory owned by
 _physic_ group containing _alice_ and _bob_ users:
@@ -46,6 +48,30 @@ to all the _physic_ group members:
 bob@host ~ $ prown /path/to/awesome/data
 bob@host ~ $ chgrp physic /path/to/awesome/data
 bob@host ~ $ chmod g+x /path/to/awesome/data
+```
+
+Consider a third user _carol_, member of _engineering_ group but not in
+_physic_ group:
+
+```
+root@host ~ # groups carol
+carol : engineering
+root@host ~ # getent group engineering
+engineering:*:1001:carol
+```
+
+She can be granted to use **prown** in _awesome_ project directory by adding
+a POSIX ACL group entry for the _engineering_ group with write permission on
+the root directory of the project:
+
+```
+root@host ~ # setfacl -m group:engineering:rwx /path/to/awesome
+```
+
+Then:
+
+```
+carol@host ~ $ prown /path/to/awesome/data
 ```
 
 [edf]: https://www.edf.fr/en/meta-home
