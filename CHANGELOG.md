@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0] - 2021-12-09
+
+### added
+
+- Tests framework with automated tests for many corner cases
+- Added a manpage page prown(1)
+- Support of i18n with translation in french
+- Support of ACL to extend list of project administator groups
+- Automatic code formating and styling with indent
+
+### fixed
+
+- Many tiny fixes thanks to static analysis with cppcheck and extra compiler
+  warnings
+- Test group membership based on GID instead of group name
+- Fix bug due to successive allocation of string on the stack when prown is
+  called with multiple paths in arguments.
+
+### changed
+
+- All output are in english by default, except french is set in environment
+- Better messages to more easily understand prown granting logic and actual
+  modifications on files
+- Write errors messages on stderr
+- Rename some symbols in code to match concept naming explained in
+  documentation
+- More generic Makefile to match packaging build systems standards expectations
+
 ## [3.8] - 2021-06-10
 
 ### fixed
