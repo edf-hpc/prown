@@ -515,7 +515,7 @@ void usage(int status) {
                  "information\n"
                  "  -h, --help             Display this help and exit\n"
                  "\n"
-                 "The user must be a member of project administrator group "
+                 "The user must be a member of project administrator groups "
                  "to take ownership of\npath in a project directory.\n"
                  "\n"
                  "Examples :\n"
