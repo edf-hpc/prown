@@ -51,7 +51,7 @@ tests:
     exitcode: 0
     stdout: null
     stderr: |
-      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor group
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
 
   - name: User not in owner group cannot prown project directory even when she has access to file
     prepare: |
@@ -72,7 +72,7 @@ tests:
         group: engineering
     stdout: null
     stderr: |
-      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor group
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
 
   - name: User can prown project but it does not change ownership of project root
     prepare: |
@@ -182,14 +182,14 @@ tests:
     stdout: |
       \+ Processing path lhc/data1
       Project path: /var/tmp/projects/lhc
-      Project administrator group GID: \d+
-      Project administrator group name: physic
+      Project group owner GID: \d+
+      Project group owner name: physic
       User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/data1
       \+ Processing path lhc/data2
       Project path: /var/tmp/projects/lhc
-      Project administrator group GID: \d+
-      Project administrator group name: physic
+      Project group owner GID: \d+
+      Project group owner name: physic
       User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/data2
     stderr: null
@@ -237,16 +237,16 @@ tests:
     stdout: |
       \+ Processing path lhc/subdir1
       Project path: /var/tmp/projects/lhc
-      Project administrator group GID: \d+
-      Project administrator group name: physic
+      Project group owner GID: \d+
+      Project group owner name: physic
       User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/subdir1
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir1 content
       Changing owner of path /var/tmp/projects/lhc/subdir1/data
       \+ Processing path lhc/subdir2
       Project path: /var/tmp/projects/lhc
-      Project administrator group GID: \d+
-      Project administrator group name: physic
+      Project group owner GID: \d+
+      Project group owner name: physic
       User is a valid member of group \d+
       Changing owner of path /var/tmp/projects/lhc/subdir2
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir2 content
@@ -468,3 +468,129 @@ tests:
     stdout: null
     stderr: |
       Path 'lhc/symlink' has not been found, it is discarded
+
+  #
+  # ACL checks
+  #
+  - name: User within group ACL with write permission can prown file in project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: john  # prown has changed from anna to john after recursive work into lhc
+        group: physic
+    stdout: null
+    stderr: null
+
+  - name: User neither in group owner nor group ACL with write permission cannot prown file in project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: marie
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: anna  # prown has not changed owner of file
+        group: physic
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User within group ACL cannot prown file in project directory if ACL has not write permission
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:r-x lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: anna  # prown has not changed owner of file
+        group: physic
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User with user ACL cannot prown file in project directory as it is restricted to group ACL
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m user:john:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: anna  # prown has not changed owner of file
+        group: physic
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User within group ACL with write permission can prown file in project directory in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc --verbose
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc
+      Project path: /var/tmp/projects/lhc
+      Project group owner GID: \d+
+      Project group owner name: physic
+      User is not member of project group owner, checking for ACL
+      User is a valid member of group \d+
+      Changing recursively owner of directory /var/tmp/projects/lhc content
+      Changing owner of path /var/tmp/projects/lhc/data
+    stderr: null
+
+  - name: User neither in group owner nor group ACL with write permission cannot prown file in project directory in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: marie
+    cmd: $BIN$ lhc --verbose
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc
+      Project path: /var/tmp/projects/lhc
+      Project group owner GID: \d+
+      Project group owner name: physic
+      User is not member of project group owner, checking for ACL
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups

@@ -35,6 +35,7 @@
 #include <stdbool.h>
 #include <libintl.h>
 #include <locale.h>
+#include <acl/libacl.h>
 
 #define MAXLINE  1000
 #define _(STRING) gettext(STRING)
@@ -116,7 +117,6 @@ bool is_user_in_group(gid_t gid) {
     if (pw == NULL) {
         perror(_("Error on getpwuid(): "));
     }
-
     //this call is just to get the correct ngroups
     getgrouplist(pw->pw_name, pw->pw_gid, NULL, &ngroups);
     __gid_t groups[ngroups];
@@ -208,6 +208,89 @@ void get_project_root(char *project_parent, char *path, char *project_root) {
 }
 
 /*
+ * Returns true if ACL entry is of type group, false otherwise.
+ */
+
+bool check_acl_is_group(acl_entry_t ent) {
+
+    acl_tag_t e_type;
+
+    if (acl_get_tag_type(ent, &e_type) == -1) {
+        perror(_("Error on acl_get_tag_type()"));
+        return false;
+    }
+
+    return (e_type == ACL_GROUP);
+
+}
+
+/*
+ * Returns true if ACL entry has write permission, false otherwise.
+ */
+
+bool check_acl_can_write(acl_entry_t ent) {
+
+    acl_permset_t e_permset;
+    int perm;
+
+    if (acl_get_permset(ent, &e_permset) == -1) {
+        perror(_("Error on acl_get_permset()"));
+        return false;
+    }
+
+    perm = acl_get_perm(e_permset, ACL_WRITE);
+
+    if (perm == -1) {
+        perror(_("Error on acl_get_perm()"));
+        return false;
+    }
+
+    return (perm == 1);
+}
+
+/*
+ * Returns true if current user is member ACL entry GID (considering it is has
+ * group type, and must be checked before call this function), false otherwise.
+ */
+
+bool check_acl_user_in_group(acl_entry_t ent) {
+
+    gid_t *id_p = acl_get_qualifier(ent);
+
+    if (!id_p) {
+        perror(_("Error on acl_get_qualifier()"));
+        return false;
+    }
+
+    return is_user_in_group(*id_p);
+}
+
+
+/*
+ * Returns true if the ACL entry fulfills all requirements:
+ *  - it has the group type
+ *  - it has the write permission
+ *  - the current user is member of this group
+ *
+ * It returns false if any of the above is false, or if any rerror is
+ * encountered.
+ */
+
+bool check_acl_entry(acl_entry_t ent) {
+
+    if (!check_acl_is_group(ent)) {
+        return false;
+    }
+
+    if (!check_acl_can_write(ent)) {
+        return false;
+    }
+
+    return check_acl_user_in_group(ent);
+
+}
+
+/*
  * Returns true if the current user is a valid administrator of the project,
  * ie. she/he is a member of the project group owner of the project root
  * directory.
@@ -217,20 +300,61 @@ bool is_user_project_admin(const char *project_root) {
 
     struct group *g;
     struct stat sb;
+    bool is_admin = false;      /* return value */
+    acl_t acl;
+    acl_entry_t ent;
+    int ret;
 
+    /* Get gid of group owner of project root directory */
     if (stat(project_root, &sb) == -1) {
-        perror(_("Error on stat(): "));
+        perror(_("Error on stat()"));
         exit(EXIT_FAILURE);
     }
     g = getgrgid((long) sb.st_gid);
 
-    VERBOSE(_("Project administrator group GID: %ld\n"), (long) sb.st_gid);
-    VERBOSE(_("Project administrator group name: %s\n"), g->gr_name);
+    VERBOSE(_("Project group owner GID: %ld\n"), (long) sb.st_gid);
+    VERBOSE(_("Project group owner name: %s\n"), g->gr_name);
 
-    return is_user_in_group(sb.st_gid);
+    /* Return true if user is member of group owner of project root directory */
+    if (is_user_in_group(sb.st_gid)) {
+        return true;
+    }
+
+    VERBOSE(_
+            ("User is not member of project group owner, checking for ACL\n"));
+
+    acl = acl_get_file(project_root, ACL_TYPE_ACCESS);
+
+    if (acl == NULL) {
+        perror(_("Error on acl_get_file()"));
+        return false;
+    }
+
+    ret = acl_get_entry(acl, ACL_FIRST_ENTRY, &ent);
+
+    if (ret == -1) {
+        perror(_("Error on acl_get_entry()"));
+        goto end;
+    }
+
+    if (ret == 0) {
+        VERBOSE(_("No ACL entries available\n"));
+        goto end;
+    }
+
+    while (ret > 0) {
+        if (check_acl_entry(ent)) {
+            is_admin = true;
+            goto end;
+        }
+        ret = acl_get_entry(acl, ACL_NEXT_ENTRY, &ent);
+    }
+
+  end:
+    acl_free(acl);
+    return is_admin;
 
 }
-
 
 /**********************************************************
  *                                                        *
@@ -343,7 +467,7 @@ int prownProject(char *path) {
     /* check user is administrator of this project */
     if (!is_user_project_admin(project_root)) {
         ERROR(_("Permission denied for project %s, you are not a member of "
-                "this project administor group\n"), project_root);
+                "this project administor groups\n"), project_root);
         return 0;
     }
 

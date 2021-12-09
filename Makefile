@@ -19,7 +19,7 @@ doc:doc/man/prown.1
 
 
 src/prown: $(PROWN_SRC)
-	$(CC) $(CFLAGS) -o $@ $^ -lbsd
+	$(CC) $(CFLAGS) -o $@ $^ -lbsd -lacl
 
 install: src/prown
 	install -D src/prown \
