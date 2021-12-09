@@ -370,10 +370,14 @@ void setOwner(const char *path) {
         perror(_("Error on chown(): "));
         exit(EXIT_FAILURE);
     }
-    //set rwx to user and rw to group if its not a symlink
+    //set rw to group if its not a symlink
     struct stat buf;
 
-    lstat(path, &buf);
+    if (lstat(path, &buf)) {
+        perror(_("Error on lstat()"));
+        exit(EXIT_FAILURE);
+    }
+
     if (!S_ISLNK(buf.st_mode)) {
         struct stat st;
 
