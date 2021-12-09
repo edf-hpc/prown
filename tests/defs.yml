@@ -182,15 +182,15 @@ tests:
     stdout: |
       \+ Processing path lhc/data1
       Project path: /var/tmp/projects/lhc
-      Project group owner GID: \d+
-      Project group owner name: physic
-      User is a valid member of group \d+
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/data1
       \+ Processing path lhc/data2
       Project path: /var/tmp/projects/lhc
-      Project group owner GID: \d+
-      Project group owner name: physic
-      User is a valid member of group \d+
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/data2
     stderr: null
 
@@ -237,17 +237,17 @@ tests:
     stdout: |
       \+ Processing path lhc/subdir1
       Project path: /var/tmp/projects/lhc
-      Project group owner GID: \d+
-      Project group owner name: physic
-      User is a valid member of group \d+
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/subdir1
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir1 content
       Changing owner of path /var/tmp/projects/lhc/subdir1/data
       \+ Processing path lhc/subdir2
       Project path: /var/tmp/projects/lhc
-      Project group owner GID: \d+
-      Project group owner name: physic
-      User is a valid member of group \d+
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/subdir2
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir2 content
       Changing owner of path /var/tmp/projects/lhc/subdir2/data
@@ -568,10 +568,11 @@ tests:
     stdout: |
       \+ Processing path lhc
       Project path: /var/tmp/projects/lhc
-      Project group owner GID: \d+
-      Project group owner name: physic
-      User is not member of project group owner, checking for ACL
-      User is a valid member of group \d+
+      Project group owner: physic \(\d+\)
+      User is NOT a valid member of group physic \(\d+\)
+      Checking ACL
+      User is a valid member of group engineering \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
       Changing recursively owner of directory /var/tmp/projects/lhc content
       Changing owner of path /var/tmp/projects/lhc/data
     stderr: null
@@ -589,8 +590,9 @@ tests:
     stdout: |
       \+ Processing path lhc
       Project path: /var/tmp/projects/lhc
-      Project group owner GID: \d+
-      Project group owner name: physic
-      User is not member of project group owner, checking for ACL
+      Project group owner: physic \(\d+\)
+      User is NOT a valid member of group physic \(\d+\)
+      Checking ACL
+      User is NOT a valid member of group engineering \(\d+\)
     stderr: |
       Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups

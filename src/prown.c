@@ -126,10 +126,13 @@ bool is_user_in_group(gid_t gid) {
 
     for (int i = 0; i < ngroups; i++) {
         if (groups[i] == gid) {
-            VERBOSE(_("User is a valid member of group %d\n"), gid);
+            VERBOSE(_("User is a valid member of group %s (%d)\n"),
+                    getgrgid(gid)->gr_name, gid);
             return true;
         }
     }
+    VERBOSE(_("User is NOT a valid member of group %s (%d)\n"),
+            getgrgid(gid)->gr_name, gid);
     return false;
 }
 
@@ -298,7 +301,6 @@ bool check_acl_entry(acl_entry_t ent) {
 
 bool is_user_project_admin(const char *project_root) {
 
-    struct group *g;
     struct stat sb;
     bool is_admin = false;      /* return value */
     acl_t acl;
@@ -310,18 +312,16 @@ bool is_user_project_admin(const char *project_root) {
         perror(_("Error on stat()"));
         exit(EXIT_FAILURE);
     }
-    g = getgrgid((long) sb.st_gid);
 
-    VERBOSE(_("Project group owner GID: %ld\n"), (long) sb.st_gid);
-    VERBOSE(_("Project group owner name: %s\n"), g->gr_name);
+    VERBOSE(_("Project group owner: %s (%d)\n"), getgrgid(sb.st_gid)->gr_name,
+            sb.st_gid);
 
     /* Return true if user is member of group owner of project root directory */
     if (is_user_in_group(sb.st_gid)) {
         return true;
     }
 
-    VERBOSE(_
-            ("User is not member of project group owner, checking for ACL\n"));
+    VERBOSE(_("Checking ACL\n"));
 
     acl = acl_get_file(project_root, ACL_TYPE_ACCESS);
 
@@ -469,7 +469,9 @@ int prownProject(char *path) {
         ERROR(_("Permission denied for project %s, you are not a member of "
                 "this project administor groups\n"), project_root);
         return 0;
-    }
+    } else
+        VERBOSE(_("User is granted to prown in project directory %s\n"),
+                project_root);
 
     stat(real_dir, &path_stat);
     //if it's a file we should call setOwner one time
