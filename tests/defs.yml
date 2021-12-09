@@ -498,6 +498,26 @@ tests:
     stdout: null
     stderr: null
 
+  - name: User within group ACL with write permission can prown file in project directory and set mode g+rw
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      setfacl -m group:engineering:rwx lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data
+        chmod 0600 lhc/data
+      }"
+    user: john
+    cmd: $BIN$ lhc/data
+    exitcode: 0
+    stat:
+      lhc/data:
+        owner: john  # john did not had access to lhc/data but prown changed owner anyway
+        mode: 0o660  # prown set g+rw
+    stdout: null
+    stderr: null
+
   - name: User neither in group owner nor group ACL with write permission cannot prown file in project directory
     prepare: |
       mkdir lhc
