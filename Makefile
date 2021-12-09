@@ -1,4 +1,5 @@
 CFLAGS ?= -Wall
+EXEC = prown
 PROWN_SRC = $(wildcard src/*.c)
 TESTS_SRC = $(wildcard tests/*.c)
 SRC = $(PROWN_SRC) $(TESTS_SRC)
@@ -14,12 +15,22 @@ INDENT_FLAGS = --no-tabs \
 CHECK = cppcheck
 CHECKFLAGS ?= -I /usr/include -I /usr/include/linux --enable=all --language=c
 prefix = /usr/local
-all:src/prown
-doc:doc/man/prown.1
-
+all:src/$(EXEC)
+doc:doc/man/$(EXEC).1
 
 src/prown: $(PROWN_SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lbsd -lacl
+
+po: po/fr/$(EXEC).mo
+
+po/fr/$(EXEC).mo: po/fr/$(EXEC).po
+	msgfmt --output-file=$@ $<
+
+po/fr/$(EXEC).po: po/$(EXEC).pot
+	msgmerge --update $@ $<
+
+po/$(EXEC).pot: $(PROWN_SRC)
+	xgettext --keyword=_ --language=C --add-comments --sort-output --package-name=$(EXEC) --output $@ $(PROWN_SRC)
 
 install: src/prown
 	install -D src/prown \
@@ -28,7 +39,7 @@ install: src/prown
 	pandoc --standalone --from markdown --to=man $^ --output $@
 
 clean:
-	-rm -f src/prown tests/isolate */*~
+	-rm -f src/prown tests/isolate */*~ po/*/*.mo
 
 indent:
 	indent $(INDENT_FLAGS) $(SRC)
@@ -48,4 +59,4 @@ distclean: clean
 uninstall:
 	-rm -f $(DESTDIR)$(prefix)/bin/prown
 
-.PHONY: all install clean distclean indent check uninstall tests
+.PHONY: all po install clean distclean indent check uninstall tests

@@ -166,6 +166,14 @@ make tests
 
 Tests require `sudo` to prepare the testing environment as root.
 
+### i18n
+
+To update gettext pot and po file for translation, run this command:
+
+```
+make po
+```
+
 ## Licence
 
 **Prown** is distributed under the terms of the GPL v3 license.

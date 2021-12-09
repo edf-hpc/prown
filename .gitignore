@@ -1,4 +1,5 @@
 src/prown
 tests/isolate
 *~
+*.mo
 doc/**/*.1
