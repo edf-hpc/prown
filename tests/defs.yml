@@ -186,12 +186,14 @@ tests:
       User is a valid member of group physic \(\d+\)
       User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/data1
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data1
       \+ Processing path lhc/data2
       Project path: /var/tmp/projects/lhc
       Project group owner: physic \(\d+\)
       User is a valid member of group physic \(\d+\)
       User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/data2
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data2
     stderr: null
 
   - name: User can prown multiple directories
@@ -241,16 +243,20 @@ tests:
       User is a valid member of group physic \(\d+\)
       User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/subdir1
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir1
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir1 content
       Changing owner of path /var/tmp/projects/lhc/subdir1/data
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir1/data
       \+ Processing path lhc/subdir2
       Project path: /var/tmp/projects/lhc
       Project group owner: physic \(\d+\)
       User is a valid member of group physic \(\d+\)
       User is granted to prown in project directory /var/tmp/projects/lhc
       Changing owner of path /var/tmp/projects/lhc/subdir2
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir2
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir2 content
       Changing owner of path /var/tmp/projects/lhc/subdir2/data
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir2/data
     stderr: null
 
   - name: User can prown glob files
@@ -575,6 +581,7 @@ tests:
       User is granted to prown in project directory /var/tmp/projects/lhc
       Changing recursively owner of directory /var/tmp/projects/lhc content
       Changing owner of path /var/tmp/projects/lhc/data
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data
     stderr: null
 
   - name: User neither in group owner nor group ACL with write permission cannot prown file in project directory in verbose mode

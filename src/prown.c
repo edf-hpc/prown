@@ -377,6 +377,9 @@ void setOwner(const char *path) {
     if (!S_ISLNK(buf.st_mode)) {
         struct stat st;
 
+        VERBOSE(_("Ensuring group owner has rw permissions on path %s\n"),
+                path);
+
         stat(path, &st);
         if (chmod(path, S_IRGRP | S_IWGRP | st.st_mode) != 0) {
             perror(_("Error on chmod(): "));
