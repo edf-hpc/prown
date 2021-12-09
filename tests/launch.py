@@ -124,10 +124,6 @@ def init_test_env(usersdb):
     print("tmp directory is %s" % (tmpdir))
     prown_path = os.path.join(tmpdir, 'src', 'prown')
 
-    # write prown configuration file
-    with open('/etc/prown.conf', 'w+') as prown_fh:
-        prown_fh.write("PROJECT_DIR %s\n" % (projects_dir))
-
     os.mkdir(projects_dir)
 
     # add user/groups in /etc/{passwd,group}
@@ -294,6 +290,11 @@ def run_tests(tests):
     nb_errors = 0
     for test in tests:
         nb_tests += 1
+
+        # write prown configuration file
+        with open('/etc/prown.conf', 'w+') as prown_fh:
+            prown_fh.write("PROJECT_DIR %s\n" % (projects_dir))
+
         if test.prepare:
             script_path = os.path.join(tmpdir, hashlib.sha224(test.name.encode('utf-8')).hexdigest() + '.sh')
             with open(script_path, 'w+') as script_fh:

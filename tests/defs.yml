@@ -29,6 +29,16 @@ tests:
     stderr: |
       $TMPDIR$/src/prown: Missing path operand
 
+  - name: Fail without configuration file
+    prepare: |
+      rm /etc/prown.conf
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 1
+    stdout: null
+    stderr: |
+      Failed to open configuration file /etc/prown.conf
+
   - name: User cannot prown outside project directory
     prepare: null
     user: john
