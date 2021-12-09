@@ -74,7 +74,7 @@ void read_config_file(char config_filename[], char *projects_parents[]) {
     char buf[MAXLINE];
 
     if ((fp = fopen(config_filename, "r")) == NULL) {
-        ERROR(_("Failed to open configuration file %s \n"), config_filename);
+        ERROR(_("Failed to open configuration file %s\n"), config_filename);
         exit(EXIT_FAILURE);
     }
     while (!feof(fp)) {
