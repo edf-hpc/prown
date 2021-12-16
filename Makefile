@@ -14,7 +14,7 @@ INDENT_FLAGS = --no-tabs \
                --blank-lines-after-declarations
 CHECK = cppcheck
 CHECKFLAGS ?= -I /usr/include -I /usr/include/linux --enable=all --language=c
-LANG_FR_MO = po/fr/$(EXEC).mo
+LANG_FR_MO = po/fr.mo
 MANPAGE = doc/man/$(EXEC).1
 BIN = src/$(EXEC)
 prefix = /usr/local
@@ -24,10 +24,10 @@ all: $(BIN) $(MANPAGE) $(LANG_FR_MO)
 $(BIN): $(PROWN_SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lbsd -lacl
 
-$(LANG_FR_MO): po/fr/$(EXEC).po
+po/%.mo: po/%.po
 	msgfmt --output-file=$@ $<
 
-po/fr/$(EXEC).po: po/$(EXEC).pot
+po/%.po: po/$(EXEC).pot
 	msgmerge --update $@ $<
 
 po/$(EXEC).pot: $(PROWN_SRC)
@@ -42,7 +42,7 @@ install: src/prown
 	pandoc --standalone --from markdown --to=man $^ --output $@
 
 clean:
-	-rm -f $(BIN) $(MANPAGE) tests/isolate po/*~ po/*/*~ po/*/*.mo
+	-rm -f $(BIN) $(MANPAGE) tests/isolate po/*~ po/*.mo
 
 indent:
 	indent $(INDENT_FLAGS) $(SRC)
