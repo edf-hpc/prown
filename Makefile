@@ -14,12 +14,12 @@ INDENT_FLAGS = --no-tabs \
                --blank-lines-after-declarations
 CHECK = cppcheck
 CHECKFLAGS ?= -I /usr/include -I /usr/include/linux --enable=all --language=c
-LANG_FR_MO = po/fr.mo
+LANG_MO = po/fr.mo
 MANPAGE = doc/man/$(EXEC).1
 BIN = src/$(EXEC)
 prefix = /usr/local
 
-all: $(BIN) $(MANPAGE) $(LANG_FR_MO)
+all: $(BIN) $(MANPAGE) $(LANG_MO)
 
 $(BIN): $(PROWN_SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lbsd -lacl
@@ -35,7 +35,7 @@ po/$(EXEC).pot: $(PROWN_SRC)
 
 install: src/prown
 	install -D -m 755 $(BIN) $(DESTDIR)$(prefix)/bin/$(EXEC)
-	install -D -m 644 $(LANG_FR_MO) $(DESTDIR)$(prefix)/share/locale/fr/LC_MESSAGES/$(EXEC).mo
+	$(foreach _MO,$(LANG_MO),install -D -m 644 $(_MO) $(DESTDIR)$(prefix)/share/locale/$(notdir $(basename $(_MO)))/LC_MESSAGES/$(EXEC).mo)
 	install -D -m 644 $(MANPAGE) $(DESTDIR)$(prefix)/share/man/man1/$(EXEC).1
 
 %.1: %.1.md
