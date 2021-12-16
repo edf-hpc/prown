@@ -14,16 +14,17 @@ INDENT_FLAGS = --no-tabs \
                --blank-lines-after-declarations
 CHECK = cppcheck
 CHECKFLAGS ?= -I /usr/include -I /usr/include/linux --enable=all --language=c
+LANG_FR_MO = po/fr/$(EXEC).mo
+MANPAGE = doc/man/$(EXEC).1
+BIN = src/$(EXEC)
 prefix = /usr/local
-all:src/$(EXEC)
-doc:doc/man/$(EXEC).1
 
-src/prown: $(PROWN_SRC)
+all: $(BIN) $(MANPAGE) $(LANG_FR_MO)
+
+$(BIN): $(PROWN_SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lbsd -lacl
 
-po: po/fr/$(EXEC).mo
-
-po/fr/$(EXEC).mo: po/fr/$(EXEC).po
+$(LANG_FR_MO): po/fr/$(EXEC).po
 	msgfmt --output-file=$@ $<
 
 po/fr/$(EXEC).po: po/$(EXEC).pot
@@ -33,13 +34,15 @@ po/$(EXEC).pot: $(PROWN_SRC)
 	xgettext --keyword=_ --language=C --add-comments --sort-output --package-name=$(EXEC) --output $@ $(PROWN_SRC)
 
 install: src/prown
-	install -D src/prown \
-                $(DESTDIR)$(prefix)/bin/prown
+	install -D -m 755 $(BIN) $(DESTDIR)$(prefix)/bin/$(EXEC)
+	install -D -m 644 $(LANG_FR_MO) $(DESTDIR)$(prefix)/share/locale/fr/LC_MESSAGES/$(EXEC).mo
+	install -D -m 644 $(MANPAGE) $(DESTDIR)$(prefix)/share/man/man1/$(EXEC).1
+
 %.1: %.1.md
 	pandoc --standalone --from markdown --to=man $^ --output $@
 
 clean:
-	-rm -f src/prown tests/isolate */*~ po/*/*.mo
+	-rm -f $(BIN) $(MANPAGE) tests/isolate po/*~ po/*/*~ po/*/*.mo
 
 indent:
 	indent $(INDENT_FLAGS) $(SRC)
@@ -57,6 +60,6 @@ tests: src/prown tests/isolate
 distclean: clean
 
 uninstall:
-	-rm -f $(DESTDIR)$(prefix)/bin/prown
+	-rm -f $(DESTDIR)$(prefix)$(BIN)
 
-.PHONY: all po install clean distclean indent check uninstall tests
+.PHONY: all po doc install clean distclean indent check uninstall tests

@@ -168,11 +168,8 @@ Tests require `sudo` to prepare the testing environment as root.
 
 ### i18n
 
-To update gettext pot and po file for translation, run this command:
-
-```
-make po
-```
+The gettext pot and po file for translation are automatically updated within
+the makefile all target.
 
 ## Licence
 
