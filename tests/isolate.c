@@ -162,7 +162,7 @@ int launch_tests() {
 
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 
     if (init_namespace())
         return EXIT_FAILURE;
