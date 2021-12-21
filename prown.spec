@@ -34,6 +34,7 @@ rm -rf %{buildroot}
 %doc GPL-3.txt
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/prown.conf
 %attr(0755,root,root) %caps(cap_chown=ep) %{_bindir}/prown
+%{_datadir}
 
 %changelog
 * Tue Jun 22 2021 Thomas HAMEL <thomas-t.hamel@edf.fr> - 3.8-2.el8.edf
