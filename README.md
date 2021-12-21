@@ -166,6 +166,20 @@ make tests
 
 Tests require `sudo` to prepare the testing environment as root.
 
+To perform the tests for many corner cases and the most complex behaviours,
+multiple users and groups are needed. Prown comes with its own test framework
+to prepare a test environment with fake users and groups.
+
+This is realized with a first shell script `run.sh` that install **prown** in
+`/tmp` and then runs `isolate` program. This one creates a Linux mount
+namespace and setup an overlay with host root filesystem (RO) and a tmpfs (RW).
+The `/tmp` directory is bind-mounted from the host to get access to **prown**
+installation. The `isolate` program finally runs Python script `launch.py`.
+This one first reads tests definitions in Yaml file `defs.yml`, then creates
+the defined fake users and groups in `/etc/passwd`, `/etc/shadown` and
+`/etc/groups` (in tmpfs) and runs all tests. The results are checked against
+expected output, files owner/modes modifications, etc and finally reported.
+
 ### i18n
 
 The gettext pot and po file for translation are automatically updated within
