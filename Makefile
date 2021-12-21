@@ -1,4 +1,4 @@
-CFLAGS ?= -Wall
+CFLAGS ?= -Wall -Wextra
 EXEC = prown
 PROWN_SRC = $(wildcard src/*.c)
 TESTS_SRC = $(wildcard tests/*.c)
