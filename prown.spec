@@ -24,11 +24,8 @@ and chage recursively the owner of the directory to that user.
 make all
 
 %install
-mkdir -p %{buildroot}%{_bindir}
-mkdir -p %{buildroot}%{_sysconfdir}
-
-install -cp src/prown       %{buildroot}%{_bindir}
-install -cp conf/prown.conf %{buildroot}%{_sysconfdir}
+make install DESTDIR=%{buildroot} prefix=/usr
+install -D -m644 -p conf/prown.conf %{buildroot}%{_sysconfdir}/prown.conf
 
 %clean
 rm -rf %{buildroot}
