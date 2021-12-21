@@ -1,0 +1,635 @@
+usersdb:
+  first_uid: 100001
+  first_gid: 100001
+  users:
+    - mike:research
+    - anna:engineering
+    - marie:research
+    - john:engineering
+    - ted:engineering
+  groups:
+    physic:
+      - mike
+      - anna
+      - ted
+    biology:
+      - marie
+      - john
+      - ted
+
+tests:
+
+  - name: Fail without arg
+    prepare: null
+    user: mike
+    cmd: $BIN$
+    exitcode: 0
+    stdout: |
+      Try 'prown --help' for more information.
+    stderr: |
+      $TMPDIR$/src/prown: Missing path operand
+
+  - name: Fail without configuration file
+    prepare: |
+      rm /etc/prown.conf
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 1
+    stdout: null
+    stderr: |
+      Failed to open configuration file /etc/prown.conf
+
+  - name: User cannot prown outside project directory
+    prepare: null
+    user: john
+    cmd: $BIN$ /root
+    exitcode: 0
+    stat:
+      /root:  # check permissions of /root did not changed
+        owner: root
+        group: root
+    stdout: null
+    stderr: |
+      Changing owner of file outside project parent directories is prohibited, path '/root' is discarded
+
+  - name: User not in owner group cannot prown project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User not in owner group cannot prown project directory even when she has access to file
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0777 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data
+      }"
+    user: john   # anna and john share the same engineering primary group, and
+                 # lhc project directory is 0777, then john has full access to
+                 # lhc/data.
+    cmd: $BIN$ lhc/data
+    exitcode: 0
+    stat:
+      lhc/data:
+        owner: anna
+        group: engineering
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User can prown project but it does not change ownership of project root
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+    stdout: null
+    stderr: null
+
+  - name: User in owner group can prown project and become owner of project files
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: mike  # prown has changed from anna to mike after recursive work into lhc
+        group: physic
+    stdout: null
+    stderr: null
+
+  - name: User in owner group can prown directely pointed project file
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: mike
+    cmd: $BIN$ lhc/data
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: mike  # prown has changed from anna to mike
+        group: physic
+    stdout: null
+    stderr: null
+
+  - name: Prown project directory
+    prepare: null
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stdout: null
+    stderr: |
+      Path 'lhc' has not been found, it is discarded
+
+  - name: Prown unexisting file
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+    user: mike
+    cmd: $BIN$ lhc/unexisting
+    exitcode: 0
+    stdout: null
+    stderr: |
+      Path 'lhc/unexisting' has not been found, it is discarded
+
+  - name: User can prown multiple files
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data1
+        touch lhc/data2
+      }"
+    user: mike
+    cmd: $BIN$ lhc/data1 lhc/data2
+    exitcode: 0
+    stat:
+      lhc/data1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/data2:
+        owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: User can prown multiple files in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data1
+        touch lhc/data2
+      }"
+    user: mike
+    cmd: $BIN$ --verbose lhc/data1 lhc/data2
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc/data1
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/data1
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data1
+      \+ Processing path lhc/data2
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/data2
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data2
+    stderr: null
+
+  - name: User can prown multiple directories
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ lhc/subdir1 lhc/subdir2
+    exitcode: 0
+    stat:
+      lhc/subdir1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir1/data:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2/data:
+        owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: User can prown multiple directories in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ --verbose lhc/subdir1 lhc/subdir2
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc/subdir1
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/subdir1
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir1
+      Changing recursively owner of directory /var/tmp/projects/lhc/subdir1 content
+      Changing owner of path /var/tmp/projects/lhc/subdir1/data
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir1/data
+      \+ Processing path lhc/subdir2
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/subdir2
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir2
+      Changing recursively owner of directory /var/tmp/projects/lhc/subdir2 content
+      Changing owner of path /var/tmp/projects/lhc/subdir2/data
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir2/data
+    stderr: null
+
+  - name: User can prown glob files
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data1
+        touch lhc/data2
+      }"
+    user: mike
+    cmd: $BIN$ lhc/*
+    shell: true
+    exitcode: 0
+    stat:
+      lhc/data1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/data2:
+        owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: User can prown glob directories
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ lhc/*
+    shell: true
+    exitcode: 0
+    stat:
+      lhc/subdir1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir1/data:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2/data:
+        owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: Prown works even if user does not have access to file in a directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data
+        chmod 0400 lhc/data
+      }"
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc/data:
+        owner: mike  # mike did not had access to lhc/data but prown changed owner anyway
+        mode: 0o460  # prown set g+rw
+    stdout: null
+    stderr: null
+
+  - name: Prown works even if user does not have access to directly pointed file
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data
+        chmod 0600 lhc/data
+      }"
+    user: mike
+    cmd: $BIN$ lhc/data
+    exitcode: 0
+    stat:
+      lhc/data:
+        owner: mike  # mike did not had access to lhc/data but prown changed owner anyway
+        mode: 0o660  # prown set g+rw
+    stdout: null
+    stderr: null
+
+  - name: Prown works even in user does have access to directory (4ddffaa)
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir
+        chmod 700 lhc/subdir
+        touch lhc/subdir/data
+      }"
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc/subdir:
+        owner: mike  # mike did not had access to lhc/subdir but prown changed owner anyway
+        mode: 0o760  # prown set g+rw
+      lhc/subdir/data:
+        owner: mike  # mike did not had access to lhc/subdir/data but prown changed owner anyway
+    stdout: null
+    stderr: null
+
+  - name: Prown does not follow symlink to file inside project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/source
+        touch lhc/source/data
+        mkdir lhc/target
+        touch lhc/target/symlink
+        ln -s ../target/symlink lhc/source/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/source
+    exitcode: 0
+    stat:
+      lhc/source/data:
+        owner: mike
+      lhc/source/symlink:
+        owner: mike  # prown has changed owner of the source of the symlink
+      lhc/target/symlink:
+        owner: anna  # prown did not change symlink target owner inside project directory
+    stdout: null
+    stderr: null
+
+  - name: Prown does not follow symlink to directory inside project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/source
+        touch lhc/source/data
+        mkdir lhc/target
+        touch lhc/target/data
+        ln -s ../target lhc/source/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/source
+    exitcode: 0
+    stat:
+      lhc/source/data:
+        owner: mike
+      lhc/source/symlink:
+        owner: mike  # prown has changed owner of the source of the symlink
+      lhc/target:
+        owner: anna  # prown did not change symlink target directory
+      lhc/target/data:
+        owner: anna  # prown did not change owner inside directory pointed by the symlink
+    stdout: null
+    stderr: null
+
+  - name: Prown does not follow symlink outside project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        ln -s /root lhc/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      /root:
+        owner: root # prown did not change symlink target owner outside project directory
+    stdout: null
+    stderr: null
+
+  - name: Prown does not fail with symlink in subdirectory pointing to not accessible target
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/source
+        touch lhc/source/data
+        ln -s fail lhc/source/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/source
+    exitcode: 0
+    stat:
+      lhc/source/data:
+        owner: mike
+      lhc/source/symlink:
+        owner: mike  # prown has changed owner of the source of the symlink even if its target is not accessible
+    stdout: null
+    stderr: null
+
+  - name: Prown fails with direct symlink pointing to not accessible target
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        ln -s fail lhc/symlink
+      }"
+    user: mike
+    cmd: $BIN$ lhc/symlink
+    exitcode: 0
+    stat:
+      lhc/symlink:
+        owner: anna  # prown has not changed the source of the symlink
+    stdout: null
+    stderr: |
+      Path 'lhc/symlink' has not been found, it is discarded
+
+  #
+  # ACL checks
+  #
+  - name: User within group ACL with write permission can prown file in project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: john  # prown has changed from anna to john after recursive work into lhc
+        group: physic
+    stdout: null
+    stderr: null
+
+  - name: User within group ACL with write permission can prown file in project directory and set mode g+rw
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      setfacl -m group:engineering:rwx lhc
+      su anna -s /bin/sh -c "{
+        touch lhc/data
+        chmod 0600 lhc/data
+      }"
+    user: john
+    cmd: $BIN$ lhc/data
+    exitcode: 0
+    stat:
+      lhc/data:
+        owner: john  # john did not had access to lhc/data but prown changed owner anyway
+        mode: 0o660  # prown set g+rw
+    stdout: null
+    stderr: null
+
+  - name: User neither in group owner nor group ACL with write permission cannot prown file in project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: marie
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: anna  # prown has not changed owner of file
+        group: physic
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User within group ACL cannot prown file in project directory if ACL has not write permission
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:r-x lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: anna  # prown has not changed owner of file
+        group: physic
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User with user ACL cannot prown file in project directory as it is restricted to group ACL
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m user:john:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: anna  # prown has not changed owner of file
+        group: physic
+    stdout: null
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
+
+  - name: User within group ACL with write permission can prown file in project directory in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ lhc --verbose
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is NOT a valid member of group physic \(\d+\)
+      Checking ACL
+      User is a valid member of group engineering \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing recursively owner of directory /var/tmp/projects/lhc content
+      Changing owner of path /var/tmp/projects/lhc/data
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data
+    stderr: null
+
+  - name: User neither in group owner nor group ACL with write permission cannot prown file in project directory in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: marie
+    cmd: $BIN$ lhc --verbose
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is NOT a valid member of group physic \(\d+\)
+      Checking ACL
+      User is NOT a valid member of group engineering \(\d+\)
+    stderr: |
+      Permission denied for project /var/tmp/projects/lhc, you are not a member of this project administor groups
