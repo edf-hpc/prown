@@ -78,7 +78,13 @@ void read_config_file(char config_filename[], char *projects_parents[]) {
         exit(EXIT_FAILURE);
     }
     while (!feof(fp)) {
-        fgets(buf, MAXLINE, fp);
+        char *rc = fgets(buf, MAXLINE, fp);
+
+        if (!feof(fp) && rc == NULL) {
+            ERROR(_("Unable to read configuration file %s\n"),
+                  config_filename);
+            exit(EXIT_FAILURE);
+        }
         if (buf[0] == '#' || strlen(buf) < 4) {
             continue;
         }
