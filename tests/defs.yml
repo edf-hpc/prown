@@ -206,6 +206,37 @@ tests:
       Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data2
     stderr: null
 
+  - name: User can prown non recursively multiple files in verbose mode
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/data1
+        touch lhc/data1/file
+        mkdir lhc/data2
+        touch lhc/data2/file
+      }"
+    user: mike
+    cmd: $BIN$ --verbose --directory lhc/data1 lhc/data2
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc/data1
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/data1
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data1
+      \+ Processing path lhc/data2
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/data2
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/data2
+    stderr: null
+
   - name: User can prown multiple directories
     prepare: |
       mkdir lhc
@@ -229,6 +260,32 @@ tests:
         owner: mike  # prown has changed from anna to mike
       lhc/subdir2/data:
         owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: User can prown multiple directories non recursively
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ --directory lhc/subdir1 lhc/subdir2
+    exitcode: 0
+    stat:
+      lhc/subdir1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir1/data:
+        owner: anna  # prown hasn't changed from anna to mike
+      lhc/subdir2:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2/data:
+        owner: anna  # prown hasn't changed from anna to mike
     stdout: null
     stderr: null
 
@@ -267,6 +324,37 @@ tests:
       Changing recursively owner of directory /var/tmp/projects/lhc/subdir2 content
       Changing owner of path /var/tmp/projects/lhc/subdir2/data
       Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir2/data
+    stderr: null
+
+  - name: User can prown multiple directories in verbose mode and non recursively
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ --verbose --directory lhc/subdir1 lhc/subdir2
+    exitcode: 0
+    stdout: |
+      \+ Processing path lhc/subdir1
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/subdir1
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir1
+      \+ Processing path lhc/subdir2
+      Project path: /var/tmp/projects/lhc
+      Project group owner: physic \(\d+\)
+      User is a valid member of group physic \(\d+\)
+      User is granted to prown in project directory /var/tmp/projects/lhc
+      Changing owner of path /var/tmp/projects/lhc/subdir2
+      Ensuring group owner has rw permissions on path /var/tmp/projects/lhc/subdir2
     stderr: null
 
   - name: User can prown glob files
@@ -314,6 +402,33 @@ tests:
         owner: mike  # prown has changed from anna to mike
       lhc/subdir2/data:
         owner: mike  # prown has changed from anna to mike
+    stdout: null
+    stderr: null
+
+  - name: User can prown glob directories non recursively
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir1
+        touch lhc/subdir1/data
+        mkdir lhc/subdir2
+        touch lhc/subdir2/data
+      }"
+    user: mike
+    cmd: $BIN$ --directory lhc/*
+    shell: true
+    exitcode: 0
+    stat:
+      lhc/subdir1:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir1/data:
+        owner: anna  # prown has changed from anna to mike
+      lhc/subdir2:
+        owner: mike  # prown has changed from anna to mike
+      lhc/subdir2/data:
+        owner: anna  # prown has changed from anna to mike
     stdout: null
     stderr: null
 
@@ -374,6 +489,28 @@ tests:
         mode: 0o760  # prown set g+rw
       lhc/subdir/data:
         owner: mike  # mike did not had access to lhc/subdir/data but prown changed owner anyway
+    stdout: null
+    stderr: null
+
+  - name: Prown works don't do anything at non recursive mode!
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      chmod 0770 lhc
+      su anna -s /bin/sh -c "{
+        mkdir lhc/subdir
+        chmod 700 lhc/subdir
+        touch lhc/subdir/data
+      }"
+    user: mike
+    cmd: $BIN$ --directory lhc
+    exitcode: 0
+    stat:
+      lhc/subdir:
+        owner: anna  # prown don't do any action due to non recursive mode used!
+        mode: 0o700  # prown don't set g+rw!
+      lhc/subdir/data:
+        owner: anna  # prown don't do any action due to non recursive mode used!
     stdout: null
     stderr: null
 
@@ -504,6 +641,26 @@ tests:
         group: physic
       lhc/data:
         owner: john  # prown has changed from anna to john after recursive work into lhc
+        group: physic
+    stdout: null
+    stderr: null
+
+  - name: User within group ACL with write permission can prown non recursively file in project directory
+    prepare: |
+      mkdir lhc
+      chown root:physic lhc
+      setfacl -m group:engineering:rwx lhc
+      touch lhc/data
+      chown anna:physic lhc/data
+    user: john
+    cmd: $BIN$ --directory lhc
+    exitcode: 0
+    stat:
+      lhc:
+        owner: root
+        group: physic
+      lhc/data:
+        owner: anna  # prown hasn't changed recursively from anna to john after work into lhc
         group: physic
     stdout: null
     stderr: null

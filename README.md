@@ -74,6 +74,24 @@ Then:
 carol@host ~ $ prown /path/to/awesome/data
 ```
 
+By default, **Prown** proceed recursively, meaning all content of _awesome_
+path provided will be changed!
+For instance, imagine that user _alice_ have launched bellow commands:
+
+```
+alice@host ~ $ mkdir /path/to/awesome/subdir
+alice@host ~ $ touch /path/to/awesome/subdir/file
+```
+
+When _carol_ launch **Prown** on path `/path/to/awesome/subdir`, by default,<br />
+it's will subsequently changed also right on `/path/to/awesome/subdir/file`!
+
+To avoid this default behaviour, needful switch must be use accordingly:
+
+```
+carol@host ~ $ prown -d /path/to/awesome/subdir
+#OR# carol@host ~ $ prown --directory /path/to/awesome/subdir
+```
 [edf]: https://www.edf.fr/en/meta-home
 [usenix]: https://www.usenix.org/legacy/publications/library/proceedings/usenix03/tech/freenix03/full_papers/gruenbacher/gruenbacher_html/main.html
 [capabilities]: https://man7.org/linux/man-pages/man7/capabilities.7.html
