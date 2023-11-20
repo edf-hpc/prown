@@ -51,6 +51,9 @@ static int verbose;
 /* number of project paths in config file */
 static int nop = 0;
 
+/* static variable to activate or not recursion */
+static int recurse = 1;
+
 /**********************************************************
  *                                                        *
  *                  Configuration load                    *
@@ -421,8 +424,8 @@ int projectOwner(char *basepath) {
             return 1;
         }
 
-        VERBOSE(_("Changing recursively owner of directory %s content\n"),
-                basepath);
+        VERBOSE(_("Changing %sowner of directory %s content\n"),
+                recurse?"recursively ":"", basepath);
 
         while ((dp = readdir(dir)) != NULL) {
             if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
@@ -433,7 +436,8 @@ int projectOwner(char *basepath) {
                 strcat(path, "/");
                 strcat(path, dp->d_name);
                 setOwner(path);
-                projectOwner(path);
+                if (recurse)
+                    projectOwner(path);
             }
         }
         closedir(dir);
@@ -496,7 +500,8 @@ int prownProject(char *path) {
         // but only the chlids
         if (strcmp(real_dir, project_root))
             setOwner(real_dir);
-        projectOwner(real_dir);
+        if (recurse)
+            projectOwner(real_dir);
     }
 
     return 0;
@@ -515,8 +520,9 @@ void usage(int status) {
         printf(_("Usage: prown [OPTION]... PATH...\n"
                  "Give user ownership of PATH in project directories. If the "
                  "PATH is a directory,\nit gives user ownership of all files "
-                 "in this directory recursively.\n"
+                 "in this directory recursively or not.\n"
                  "\n"
+                 "  -d, --directory        Don't proceed recursively!\n"
                  "  -v, --verbose          Display modified paths and more "
                  "information\n"
                  "  -h, --help             Display this help and exit\n"
@@ -538,7 +544,7 @@ void usage(int status) {
 }
 
 int main(int argc, char **argv) {
-    char *options = "hv";
+    char *options = "dhv";
     int longindex;
     int opt;
     int help = 0;
@@ -546,6 +552,7 @@ int main(int argc, char **argv) {
     struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
         {"verbose", no_argument, NULL, 'v'},
+        {"directory", no_argument, NULL, 'd'},
         {NULL, 0, NULL, 0}
     };
 
@@ -563,6 +570,9 @@ int main(int argc, char **argv) {
         case 'h':
             help = 1;
             usage(EXIT_SUCCESS);
+            break;
+        case 'd':
+            recurse = 0;
             break;
         default:
             usage(EXIT_FAILURE);
