@@ -51,6 +51,15 @@ static int verbose;
 /* number of project paths in config file */
 static int nop = 0;
 
+/* number of authorized groups in config file
+ * and associated string array
+ * */
+static int noag = 0;
+static char *authorized_groups[PATH_MAX];
+
+/* static variable to activate or not recursion */
+static int recurse = 1;
+
 /**********************************************************
  *                                                        *
  *                  Configuration load                    *
@@ -69,7 +78,8 @@ void read_str_from_config_line(char *config_line, char *val) {
 /*
  * Read config file. projects_parents is the lis of projects
  * */
-void read_config_file(char config_filename[], char *projects_parents[]) {
+void read_config_file(char config_filename[], char *projects_parents[],
+                      char *authorized_groups[]) {
     FILE *fp;
     char buf[MAXLINE];
 
@@ -98,6 +108,16 @@ void read_config_file(char config_filename[], char *projects_parents[]) {
             }
             read_str_from_config_line(buf, projects_parents[nop]);
             nop++;
+        } else if (strstr(buf, "AUTHORIZED_GROUP ")) {
+            if ((authorized_groups[noag] =
+                 malloc(sizeof(char) * PATH_MAX)) == NULL) {
+                ERROR(_
+                      ("Unable to allocate memory for loading "
+                       "configuration file parameters\n"));
+                exit(1);
+            }
+            read_str_from_config_line(buf, authorized_groups[noag]);
+            noag++;
         }
     }
     fclose(fp);
@@ -108,6 +128,40 @@ void read_config_file(char config_filename[], char *projects_parents[]) {
  *                      Helpers                           *
  *                                                        *
  **********************************************************/
+
+
+/*
+ * Returns true if user is member of authorized group whose gid is in a
+ * argument, false otherwise.
+ */
+bool is_user_in_authorized_group(int idx, char * user, int ngroups, __gid_t * groups) {
+
+    struct group *gr;
+    char *agroup;
+
+    agroup = authorized_groups[idx];
+    gr = getgrnam(agroup);
+
+    if (gr == NULL) {
+        VERBOSE(_("Authorized group name %s don't exist!\n"), agroup);
+        VERBOSE(_
+                ("We assume User can't be a valid member of unexistent group!\n"));
+        return false;
+    }
+
+    for (int i = 0; i < ngroups; i++) {
+        if (gr->gr_gid == groups[i]) {
+            VERBOSE(_("User is a valid member of authorized group %s (%d)\n"),
+                    agroup, groups[i]);
+            return true;
+        }
+    }
+
+    VERBOSE(_("User %s is NOT a valid member of authorized group %s (%d)\n"),
+            user, agroup, gr->gr_gid);
+
+    return false;
+}
 
 /*
  * Returns true if user is member of group whose gid is in a
@@ -129,6 +183,30 @@ bool is_user_in_group(gid_t gid) {
 
     //here we actually get the groups
     getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups);
+
+    int count = 0;
+
+    if (!noag) {
+        // skip if no authorized group provided!
+        // assuming default to all rw group are authorized!
+        count = 1;
+    }
+    /* Start checking if User is a valid member of any authorized group!
+     * scanning the list of groups the user belongs to
+     * stop scanning at noag-1 as authorized array have one more entry!
+     * */
+    for (int i = 0; i < noag-1; i++) {
+        if (is_user_in_authorized_group(i, pw->pw_name, ngroups, groups)) {
+            ++count;
+            break;
+        }
+    }
+    //printf("ngroups: %d, noag: %d count: %d\n", ngroups, noag, count);
+
+    if (!count) {
+        VERBOSE(_("User is NOT a valid member of any authorized group!\n"));
+        return false;
+    }
 
     for (int i = 0; i < ngroups; i++) {
         if (groups[i] == gid) {
@@ -421,8 +499,8 @@ int projectOwner(char *basepath) {
             return 1;
         }
 
-        VERBOSE(_("Changing recursively owner of directory %s content\n"),
-                basepath);
+        VERBOSE(_("Changing %sowner of directory %s content\n"),
+                recurse ? "recursively " : "", basepath);
 
         while ((dp = readdir(dir)) != NULL) {
             if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
@@ -433,7 +511,8 @@ int projectOwner(char *basepath) {
                 strcat(path, "/");
                 strcat(path, dp->d_name);
                 setOwner(path);
-                projectOwner(path);
+                if (recurse)
+                    projectOwner(path);
             }
         }
         closedir(dir);
@@ -454,7 +533,7 @@ int prownProject(char *path) {
     memset(project_parent, 0, PATH_MAX);
     memset(project_root, 0, PATH_MAX);
 
-    read_config_file("/etc/prown.conf", projects_parents);
+    read_config_file("/etc/prown.conf", projects_parents, authorized_groups);
 
     VERBOSE(_("+ Processing path %s\n"), path);
 
@@ -496,7 +575,8 @@ int prownProject(char *path) {
         // but only the chlids
         if (strcmp(real_dir, project_root))
             setOwner(real_dir);
-        projectOwner(real_dir);
+        if (recurse)
+            projectOwner(real_dir);
     }
 
     return 0;
@@ -515,8 +595,9 @@ void usage(int status) {
         printf(_("Usage: prown [OPTION]... PATH...\n"
                  "Give user ownership of PATH in project directories. If the "
                  "PATH is a directory,\nit gives user ownership of all files "
-                 "in this directory recursively.\n"
+                 "in this directory recursively or not.\n"
                  "\n"
+                 "  -d, --directory        Don't proceed recursively!\n"
                  "  -v, --verbose          Display modified paths and more "
                  "information\n"
                  "  -h, --help             Display this help and exit\n"
@@ -538,7 +619,7 @@ void usage(int status) {
 }
 
 int main(int argc, char **argv) {
-    char *options = "hv";
+    char *options = "dhv";
     int longindex;
     int opt;
     int help = 0;
@@ -546,6 +627,7 @@ int main(int argc, char **argv) {
     struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
         {"verbose", no_argument, NULL, 'v'},
+        {"directory", no_argument, NULL, 'd'},
         {NULL, 0, NULL, 0}
     };
 
@@ -563,6 +645,9 @@ int main(int argc, char **argv) {
         case 'h':
             help = 1;
             usage(EXIT_SUCCESS);
+            break;
+        case 'd':
+            recurse = 0;
             break;
         default:
             usage(EXIT_FAILURE);

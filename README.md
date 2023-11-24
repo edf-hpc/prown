@@ -22,6 +22,11 @@ administator groups* are the union of the group owner of the project root
 directory and the groups having a POSIX ACL with write permission attached to
 the project root directory.
 
+Optionally, *Prown* usage can be granted only to authorized subset of group(s)
+in *project administator groups*, named *authorized groups*!
+See bellow for more details.
+
+
 Here is a typical example, considering an _awesome_ project directory owned by
 _physic_ group containing _alice_ and _bob_ users:
 
@@ -74,6 +79,60 @@ Then:
 carol@host ~ $ prown /path/to/awesome/data
 ```
 
+By default, **Prown** proceed recursively, meaning all content of _awesome_
+path provided will be changed!
+For instance, imagine that user _alice_ have launched bellow commands:
+
+```
+alice@host ~ $ mkdir /path/to/awesome/subdir
+alice@host ~ $ touch /path/to/awesome/subdir/file
+```
+
+When _carol_ launch **Prown** on path `/path/to/awesome/subdir`, by default,<br />
+it's will subsequently changed also right on `/path/to/awesome/subdir/file`!
+
+To avoid this default behaviour, needful switch must be use accordingly:
+
+```
+carol@host ~ $ prown -d /path/to/awesome/subdir
+#OR# carol@host ~ $ prown --directory /path/to/awesome/subdir
+```
+
+It's also **optionally** possible to enforce **Prown** usage only for user
+member of specific authorized groups, say _physic_ and _engineering_ one!
+
+Consider a fourth user _marie_, member of _research_ group but not in either
+_physic_ nor _engineering_ groups:
+
+```
+root@host ~ # groups marie
+marie : research
+root@host ~ # getent group research
+research:*:1002:marie
+```
+
+Following same rule as _carol_ user, _marie_ **should** be granted to use
+**prown** in _awesome_ project directory by adding a POSIX ACL group entry for
+the _research_ group with write permission on the root directory of the project:
+
+```
+root@host ~ # setfacl -m group:research:rwx /path/to/awesome
+```
+
+But **Prown** must failed:
+
+```
+marie@host ~ $ prown /path/to/awesome/data
+```
+
+With bellow error:
+
+```
+User is NOT a valid member of authorized group physic (1000)
+User is NOT a valid member of authorized group engineering (1001)
+User is NOT a valid member of any authorized group!
+```
+
 [edf]: https://www.edf.fr/en/meta-home
 [usenix]: https://www.usenix.org/legacy/publications/library/proceedings/usenix03/tech/freenix03/full_papers/gruenbacher/gruenbacher_html/main.html
 [capabilities]: https://man7.org/linux/man-pages/man7/capabilities.7.html
@@ -109,10 +168,15 @@ Setup the parent directory on the project directories:
 **Prown** uses one system-wide configuration file `/etc/prown.conf`.
 
 It contains the list of parent directories of project directories or, in other
-ords, the directories containing project directories. **Prown** can only change
+words, the directories containing project directories. **Prown** can only change
 owner on the files under these directories. The directories are declared one
 per line prefixed by *PROJECT\_DIR* keyword. All lines that do not start with
 this keyword are ignored.
+
+At another part, authorization can be enforced with **optional** keyword
+*AUTHORIZED\_GROUP*, one per line. When this keyword exist in `/etc/prown.conf`
+file, user must be not only member of writable group, but also member of
+groups list by *AUTHORIZED\_GROUP*,  to be able to use **Prown**.
 
 ## Usage
 
