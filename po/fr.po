@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-12-21 10:06+0100\n"
+"POT-Creation-Date: 2023-11-29 18:03+0100\n"
 "PO-Revision-Date: 2021-12-09 15:25+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: French\n"
@@ -17,12 +17,22 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/prown.c:458
+#: src/prown.c:538
 #, c-format
 msgid "+ Processing path %s\n"
 msgstr "+ Traitement du chemin %s\n"
 
-#: src/prown.c:471
+#: src/prown.c:146
+#, c-format
+msgid "Authorized group name %s don't exist!\n"
+msgstr "Le groupe authorisé %s n'existe pas!\n"
+
+#: src/prown.c:502
+#, fuzzy, c-format
+msgid "Changing %sowner of directory %s content\n"
+msgstr "Changement récursif du propriétaire dans le contenu du répertoire %s\n"
+
+#: src/prown.c:551
 #, c-format
 msgid ""
 "Changing owner of file outside project parent directories is prohibited, "
@@ -32,94 +42,89 @@ msgstr ""
 "répertoires projets est interdit, le chemin '%s' est ignoré\n"
 
 #. use lchown to change owner for symlinks
-#: src/prown.c:373
+#: src/prown.c:452
 #, c-format
 msgid "Changing owner of path %s\n"
 msgstr "Changement du propriétaire du chemin %s\n"
 
-#: src/prown.c:423
-#, c-format
-msgid "Changing recursively owner of directory %s content\n"
-msgstr "Changement récursif du propriétaire dans le contenu du répertoire %s\n"
-
-#: src/prown.c:329
+#: src/prown.c:408
 msgid "Checking ACL\n"
 msgstr "Vérification des ACL\n"
 
-#: src/prown.c:389
+#: src/prown.c:468
 #, c-format
 msgid "Ensuring group owner has rw permissions on path %s\n"
 msgstr ""
 "Position des permissions rw pour le groupe propriétaire sur le chemin %s\n"
 
-#: src/prown.c:341
+#: src/prown.c:420
 msgid "Error on acl_get_entry()"
 msgstr "Erreur avec acl_get_entry()"
 
-#: src/prown.c:334
+#: src/prown.c:413
 msgid "Error on acl_get_file()"
 msgstr "Erreur avec acl_get_file()"
 
-#: src/prown.c:252
+#: src/prown.c:331
 msgid "Error on acl_get_perm()"
 msgstr "Erreur avec acl_get_perm()"
 
-#: src/prown.c:245
+#: src/prown.c:324
 msgid "Error on acl_get_permset()"
 msgstr "Erreur avec acl_get_permset()"
 
-#: src/prown.c:269
+#: src/prown.c:348
 msgid "Error on acl_get_qualifier()"
 msgstr "Erreur avec acl_get_qualifier()"
 
-#: src/prown.c:227
+#: src/prown.c:306
 msgid "Error on acl_get_tag_type()"
 msgstr "Erreur avec acl_get_tag_type()"
 
-#: src/prown.c:394
+#: src/prown.c:473
 msgid "Error on chmod(): "
 msgstr "Erreur avec chmod(): "
 
-#: src/prown.c:375
+#: src/prown.c:454
 msgid "Error on chown(): "
 msgstr "Erreur avec chown(): "
 
-#: src/prown.c:123
+#: src/prown.c:178
 msgid "Error on getpwuid(): "
 msgstr "Erreur avec getpwuid(): "
 
-#: src/prown.c:382
+#: src/prown.c:461
 msgid "Error on lstat()"
 msgstr "Erreur avec lstat()"
 
-#: src/prown.c:317
+#: src/prown.c:396
 msgid "Error on stat()"
 msgstr "Erreur avec stat()"
 
-#: src/prown.c:77
+#: src/prown.c:87
 #, c-format
 msgid "Failed to open configuration file %s\n"
 msgstr "Echec à l'ouverture du fichier de configuration %s\n"
 
-#: src/prown.c:418
+#: src/prown.c:497
 #, c-format
 msgid "Failed to open directory '%s': %s (%d)\n"
 msgstr "Echec à l'ouverture du répertoire '%s': %s (%d)\n"
 
-#: src/prown.c:572
+#: src/prown.c:658
 msgid "Missing path operand"
 msgstr "Opérande de chemin manquante"
 
-#: src/prown.c:346
+#: src/prown.c:425
 msgid "No ACL entries available\n"
 msgstr "Aucune ACL disponible\n"
 
-#: src/prown.c:462
+#: src/prown.c:542
 #, c-format
 msgid "Path '%s' has not been found, it is discarded\n"
 msgstr "Le chemin '%s' n'a pas été trouvée, il est ignoré\n"
 
-#: src/prown.c:481
+#: src/prown.c:561
 #, c-format
 msgid ""
 "Permission denied for project %s, you are not a member of this project "
@@ -128,40 +133,41 @@ msgstr ""
 "Accès refusé au projet %s, vous n'êtes pas member des groupes "
 "d'administrateurs du projet\n"
 
-#: src/prown.c:321
+#: src/prown.c:400
 #, c-format
 msgid "Project group owner: %s (%d)\n"
 msgstr "Groupe propriétraire du projet: %s (%d)\n"
 
-#: src/prown.c:214
+#: src/prown.c:293
 #, c-format
 msgid "Project path: %s\n"
 msgstr "Chemin du projet: %s\n"
 
-#: src/prown.c:512
+#: src/prown.c:593
 #, c-format
 msgid "Try 'prown --help' for more information.\n"
 msgstr "Saissisez « prown --help » pour plus d'informations\n"
 
-#: src/prown.c:94
+#: src/prown.c:105 src/prown.c:115
 msgid "Unable to allocate memory for loading configuration file parameters\n"
 msgstr ""
 "Impossible d'allouer de la mémoire pour charger les paramètres du fichier de "
 "configuration\n"
 
-#: src/prown.c:83
+#: src/prown.c:94
 #, fuzzy, c-format
 msgid "Unable to read configuration file %s\n"
 msgstr "Echec à l'ouverture du fichier de configuration %s\n"
 
-#: src/prown.c:514
-#, c-format
+#: src/prown.c:595
+#, fuzzy, c-format
 msgid ""
 "Usage: prown [OPTION]... PATH...\n"
 "Give user ownership of PATH in project directories. If the PATH is a "
 "directory,\n"
-"it gives user ownership of all files in this directory recursively.\n"
+"it gives user ownership of all files in this directory recursively or not.\n"
 "\n"
+"  -d, --directory        Don't proceed recursively!\n"
 "  -v, --verbose          Display modified paths and more information\n"
 "  -h, --help             Display this help and exit\n"
 "\n"
@@ -183,6 +189,7 @@ msgstr ""
 "positionné comme propriétaire sur tous les fichiers de ce répertoire\n"
 "récursivement.\n"
 "\n"
+"  -d, --directory        Modification non récursive!\n"
 "  -v, --verbose          Afficher les modifications réalisées et des\n"
 "                         informations complémentaires\n"
 "  -h, --help             Afficher l'aide et quitter\n"
@@ -198,18 +205,38 @@ msgstr ""
 "  prown awesome crazy    Devenir propriétaire des deux répertoires projets\n"
 "                         awesome et crazy récursivement\n"
 
-#: src/prown.c:139
+#: src/prown.c:160
+#, fuzzy, c-format
+msgid "User %s is NOT a valid member of authorized group %s (%d)\n"
+msgstr "L'utilisateur n'est PAS un membre du groupe %s (%d)\n"
+
+#: src/prown.c:207
+#, fuzzy
+msgid "User is NOT a valid member of any authorized group!\n"
+msgstr "L'utilisateur n'est PAS un membre du groupe %s (%d)\n"
+
+#: src/prown.c:218
 #, c-format
 msgid "User is NOT a valid member of group %s (%d)\n"
 msgstr "L'utilisateur n'est PAS un membre du groupe %s (%d)\n"
 
-#: src/prown.c:134
+#: src/prown.c:154
+#, fuzzy, c-format
+msgid "User is a valid member of authorized group %s (%d)\n"
+msgstr "L'utilisateur est un membre du groupe %s (%d)\n"
+
+#: src/prown.c:213
 #, c-format
 msgid "User is a valid member of group %s (%d)\n"
 msgstr "L'utilisateur est un membre du groupe %s (%d)\n"
 
-#: src/prown.c:485
+#: src/prown.c:565
 #, c-format
 msgid "User is granted to prown in project directory %s\n"
 msgstr ""
 "L'utilisateur est autorisé à utiliser prown dans le répertoire projet %s\n"
+
+#: src/prown.c:148
+#, fuzzy
+msgid "We assume User can't be a valid member of unexistent group!\n"
+msgstr "L'utilisateur est un membre du groupe %s (%d)\n"
