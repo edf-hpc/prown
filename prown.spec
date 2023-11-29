@@ -6,7 +6,7 @@ Summary:  Prown is a simple tool to give users the possibility to own projects.
 License:  GPL-3.0+
 Source0:  %{name}-%{version}.tar.gz
 
-BuildRequires: libbsd-devel libacl-devel pandoc
+BuildRequires: libbsd-devel libacl-devel pandoc gettext
 
 %description
 Prown is a simple tool developed to give users the possibility to own projects. 
