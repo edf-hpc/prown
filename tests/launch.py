@@ -124,7 +124,7 @@ def init_test_env(usersdb):
     print("tmp directory is %s" % (tmpdir))
     prown_path = os.path.join(tmpdir, 'src', 'prown')
 
-    os.mkdir(projects_dir)
+    os.makedirs(projects_dir, exist_ok=True)
 
     # add user/groups in /etc/{passwd,group}
     with open('/etc/passwd', 'a') as passwd_fh:
