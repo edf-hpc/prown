@@ -37,6 +37,8 @@ rm -rf %{buildroot}
 %{_datadir}
 
 %changelog
+* Fri Jul 25 2025 Mouloud Sadeg <mouloud.sadeg@edf.fr> - 4.1-1.el9.edf
+- El9 packaging
 * Fri Nov 24 2023 Kwame Amedodji <kwame-externe.amedodji@edf.fr> - 4.1-1.el8.edf
 - New upstream release 4.1
 * Tue Dec 22 2021 Rémi Palancher <remi-externe.palancher@edf.fr> - 4.0-1.el8.edf
