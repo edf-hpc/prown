@@ -604,7 +604,7 @@ tests:
     stdout: null
     stderr: null
 
-  - name: Prown fails with direct symlink pointing to not accessible target
+  - name: Prown does not fail with direct symlink pointing to not accessible target
     prepare: |
       mkdir lhc
       chown root:physic lhc
@@ -617,10 +617,9 @@ tests:
     exitcode: 0
     stat:
       lhc/symlink:
-        owner: anna  # prown has not changed the source of the symlink
+        owner: mike  # prown has changed owner of the source of the symlink even if its target is not accessible
     stdout: null
-    stderr: |
-      Path 'lhc/symlink' has not been found, it is discarded
+    stderr: null
 
   #
   # ACL checks
