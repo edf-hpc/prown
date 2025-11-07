@@ -522,34 +522,40 @@ int projectOwner(char *basepath) {
 }
 
 char *realpath_nofollow(const char *path, char *resolved_path) {
-    char tmp_path[PATH_MAX];
-    char dir[PATH_MAX];
-    char base[PATH_MAX];
-    char dir_resolved[PATH_MAX];
+    char tmp_path[PATH_MAX] = {0};
+    char dir[PATH_MAX] = {0};
+    char base[PATH_MAX] = {0};
+    struct stat buf;
 
-    memset(tmp_path, 0, PATH_MAX);
-    memset(dir, 0, PATH_MAX);
-    memset(base, 0, PATH_MAX);
-    memset(dir_resolved, 0, PATH_MAX);
-
-    // copy the original path
-    strcpy(tmp_path, path);
-
-    // extract the directory part and the filename
-    strcpy(dir, tmp_path);
-    strcpy(base, basename(tmp_path));
-
-    // Resolve the directory path
-    if (!realpath(dirname(dir), dir_resolved)) {
+    if (lstat(path, &buf)) {
         return NULL;
     }
 
-    // Build the absolute path of the link itself
-    strcat(resolved_path, dir_resolved);
-    strcat(resolved_path, "/");
-    strcat(resolved_path, base);
+    if (S_ISLNK(buf.st_mode)) {
 
+        // extract the directory part and the filename
+        strlcpy(tmp_path, path, PATH_MAX);
+        strlcpy(dir, dirname(tmp_path), PATH_MAX);
+        strlcpy(tmp_path, path, PATH_MAX);
+        strlcpy(base, basename(tmp_path), PATH_MAX);
+
+        // Resolve the directory path
+        if (!realpath(dir, resolved_path)) {
+            return NULL;
+        }
+
+        // Build the absolute path of the link itself
+        strlcat(resolved_path, "/", PATH_MAX);
+        strlcat(resolved_path, base, PATH_MAX);
+        
+    }
+    else {
+        if (!realpath(path, resolved_path)) {
+            return NULL;
+        }
+    }
     return resolved_path;
+    
 }
 
 int prownProject(char *path) {
