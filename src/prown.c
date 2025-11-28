@@ -36,6 +36,7 @@
 #include <libintl.h>
 #include <locale.h>
 #include <acl/libacl.h>
+#include <libgen.h>
 
 #define MAXLINE  1000
 #define _(STRING) gettext(STRING)
@@ -520,6 +521,43 @@ int projectOwner(char *basepath) {
     return status;
 }
 
+char *realpath_nofollow(const char *path, char *resolved_path) {
+    char tmp_path[PATH_MAX] = {0};
+    char dir[PATH_MAX] = {0};
+    char base[PATH_MAX] = {0};
+    struct stat buf;
+
+    if (lstat(path, &buf)) {
+        return NULL;
+    }
+
+    if (S_ISLNK(buf.st_mode)) {
+
+        // extract the directory part and the filename
+        strlcpy(tmp_path, path, PATH_MAX);
+        strlcpy(dir, dirname(tmp_path), PATH_MAX);
+        strlcpy(tmp_path, path, PATH_MAX);
+        strlcpy(base, basename(tmp_path), PATH_MAX);
+
+        // Resolve the directory path
+        if (!realpath(dir, resolved_path)) {
+            return NULL;
+        }
+
+        // Build the absolute path of the link itself
+        strlcat(resolved_path, "/", PATH_MAX);
+        strlcat(resolved_path, base, PATH_MAX);
+        
+    }
+    else {
+        if (!realpath(path, resolved_path)) {
+            return NULL;
+        }
+    }
+    return resolved_path;
+    
+}
+
 int prownProject(char *path) {
     char *projects_parents[PATH_MAX];
     char real_dir[PATH_MAX];
@@ -538,7 +576,7 @@ int prownProject(char *path) {
     VERBOSE(_("+ Processing path %s\n"), path);
 
     // check the real path is correct
-    if (!realpath(path, real_dir)) {
+    if (!realpath_nofollow(path, real_dir)) {
         ERROR(_("Path '%s' has not been found, it is discarded\n"), path);
         return 0;
     }
