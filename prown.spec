@@ -1,5 +1,5 @@
 Name:     prown
-Version:  4.1
+Version:  4.2
 Release:  1%{?dist}.edf
 Summary:  Prown is a simple tool to give users the possibility to own projects. 
 
@@ -37,6 +37,8 @@ rm -rf %{buildroot}
 %{_datadir}
 
 %changelog
+* Mon Dec 01 2025 Mouloud SADEG <mouloud.sadeg@edf.fr> - 4.2-1.el8.edf
+- New upstream release 4.2
 * Fri Nov 24 2023 Kwame Amedodji <kwame-externe.amedodji@edf.fr> - 4.1-1.el8.edf
 - New upstream release 4.1
 * Tue Dec 22 2021 Rémi Palancher <remi-externe.palancher@edf.fr> - 4.0-1.el8.edf
