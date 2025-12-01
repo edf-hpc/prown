@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2] - 2025-12-01
+
+### changed
+
+-   Replaced realpath with realpath_nofollow to get the absolute path of a symlink itself, without following it.
+-   Test symlink should not fail on a direct symlink to an inaccessible target, but should only update the symlink itself.
+
 ## [4.0] - 2021-12-09
 
 ### added
